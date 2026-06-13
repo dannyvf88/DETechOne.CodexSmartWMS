@@ -35,6 +35,14 @@ El working tree estaba limpio al iniciar esta bitacora. La unica modificacion nu
   - Consulta y registro de eventos contra `api/audit/events`.
   - Consulta, creacion, reconocimiento y resolucion de alertas contra `api/alerts`.
 
+- E2E Operations UI operacional
+  - Nueva pantalla `/end-to-end`.
+  - Entrada agregada al menu lateral.
+  - Inicio de flujo order-to-delivery contra `api/end-to-end/order-to-delivery/start`.
+  - Ejecucion de flujo contra `api/end-to-end/order-to-delivery/execute`.
+  - Consulta de flujo por `FlowId` contra `api/end-to-end/order-to-delivery/{flowId}`.
+  - Visualizacion de resumen, documentos generados y etapas del flujo.
+
 ### Base del repositorio
 
 - `0629cf8 Initial SmartWMS project import`
@@ -114,6 +122,7 @@ Estamos al cierre funcional de las pantallas operativas principales de Fase 11:
 - Devices: conectado.
 - Alerts: conectado.
 - Audit: conectado.
+- E2E Operations: conectado.
 - Autenticacion UI: estabilizada y documentada.
 
 La rama `codex/phase-11-operational-pages` esta publicada en remoto y contiene el ultimo avance operativo.
@@ -122,12 +131,12 @@ La rama `codex/phase-11-operational-pages` esta publicada en remoto y contiene e
 
 Pendientes inmediatos recomendados:
 
-1. Revisar si las pantallas `SAP` o flujos E2E requieren UI operacional en Fase 11.
+1. Revisar si la pantalla `SAP` requiere UI operacional en Fase 11.
 2. Agregar pruebas automatizadas de UI o componentes para las paginas nuevas si el proyecto adopta bUnit, Playwright u otra herramienta.
 3. Validar navegacion completa con usuario real o token real contra API levantada.
 4. Revisar UX de errores por endpoint para distinguir validacion de negocio, expiracion de sesion y falla de conectividad.
 5. Confirmar si los formularios manuales actuales deben reemplazarse por busquedas reales de documentos origen.
-6. Ejecutar una pasada end-to-end completa: Sales Order SAP -> Picking -> Packing -> Shipping -> Delivery SAP.
+6. Ejecutar una pasada end-to-end completa con SAP Service Layer configurado: Sales Order SAP -> Picking -> Packing -> Shipping -> Delivery SAP.
 7. Preparar merge de `codex/phase-11-operational-pages` hacia `main` cuando el alcance de UI operacional quede aprobado.
 
 ## Siguiente paso recomendado
@@ -136,9 +145,9 @@ El siguiente bloque natural es definir y construir la siguiente pantalla operaci
 
 - Audit/Alerts: consulta operacional de auditoria y alertas.
 - SAP: visibilidad de conectividad, metadata y documentos integrados.
-- E2E Operations: pantalla resumen para ejecutar o monitorear el flujo completo.
+- QA final de Fase 11: pasada completa con API/Web y, si aplica, SAP real.
 
-Recomendacion pragmatica: continuar con `E2E Operations` si el objetivo es validar el flujo completo antes de cerrar Fase 11; continuar con `SAP` si el objetivo es dar visibilidad a conectividad, metadata y documentos integrados.
+Recomendacion pragmatica: continuar con `SAP` si el objetivo es dar visibilidad a conectividad, metadata y documentos integrados; si SAP no entra en Fase 11 UI, preparar QA final y merge hacia `main`.
 
 ## Convencion para actualizar esta bitacora
 
