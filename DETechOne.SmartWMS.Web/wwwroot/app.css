@@ -136,6 +136,42 @@ a, .btn-link {
     box-shadow: 0 8px 24px rgba(15, 23, 42, .05);
 }
 
+.swms-metric-list {
+    display: grid;
+    gap: .75rem;
+}
+
+.swms-metric-list div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid #eef2f7;
+    padding-bottom: .6rem;
+}
+
+.swms-metric-list span,
+.swms-counter-tile span {
+    color: #64748b;
+}
+
+.swms-counter-tile {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1rem;
+    min-height: 110px;
+    background: #f8fafc;
+}
+
+.swms-counter-tile strong {
+    display: block;
+    font-size: 1.5rem;
+    margin-top: .5rem;
+}
+
+.swms-counter-tile small {
+    color: #64748b;
+}
+
 .validation-message {
     color: #dc2626;
     font-size: .85rem;

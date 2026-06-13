@@ -1,14 +1,222 @@
 @attribute [SmartWmsAuthorize]
 @page "/dashboard"
+@inject DETechOne.SmartWMS.Web.Services.Api.ISmartWmsApiClient ApiClient
 
 <PageTitle>Dashboard | SmartWMS</PageTitle>
 
-<h1>Dashboard SmartWMS</h1>
-<p class="text-muted">Base visual de KPIs operativos. Se conectará con <code>GET /api/dashboard/overview</code> en la siguiente fase de UI.</p>
-
-<div class="row g-3">
-    <div class="col-md-3"><div class="swms-kpi-card"><span>Picking abiertos</span><strong>--</strong></div></div>
-    <div class="col-md-3"><div class="swms-kpi-card"><span>Packing abiertos</span><strong>--</strong></div></div>
-    <div class="col-md-3"><div class="swms-kpi-card"><span>Shipping abiertos</span><strong>--</strong></div></div>
-    <div class="col-md-3"><div class="swms-kpi-card"><span>Dispositivos online</span><strong>--</strong></div></div>
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+    <div>
+        <h1>Dashboard SmartWMS</h1>
+        <p class="text-muted mb-0">Indicadores operativos consolidados desde la API.</p>
+    </div>
+    <button class="btn btn-outline-primary" type="button" @onclick="LoadOverviewAsync" disabled="@_isLoading">
+        @(_isLoading ? "Actualizando..." : "Actualizar")
+    </button>
 </div>
+
+@if (_isLoading)
+{
+    <div class="alert alert-info">Cargando metricas operativas...</div>
+}
+else if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+else if (_overview is null)
+{
+    <div class="alert alert-warning">No hay metricas disponibles.</div>
+}
+else
+{
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="swms-kpi-card">
+                <span>Picking abiertos</span>
+                <strong>@_overview.Picking.Open</strong>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="swms-kpi-card">
+                <span>Packing abiertos</span>
+                <strong>@_overview.Packing.Open</strong>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="swms-kpi-card">
+                <span>Shipping abiertos</span>
+                <strong>@_overview.Shipping.Open</strong>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="swms-kpi-card">
+                <span>Dispositivos online</span>
+                <strong>@_overview.Devices.Online</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-xl-8">
+            <div class="swms-page-card bg-white p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h5 mb-0">Flujo operativo</h2>
+                    <span class="text-muted small">Generado @FormatDate(_overview.GeneratedAtUtc)</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Proceso</th>
+                                <th class="text-end">Abiertos</th>
+                                <th class="text-end">En proceso</th>
+                                <th class="text-end">Completados</th>
+                                <th class="text-end">Cancelados</th>
+                                <th class="text-end">Pendiente</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in GetOperationRows())
+                            {
+                                <tr>
+                                    <td>@row.Label</td>
+                                    <td class="text-end">@row.Metrics.Open</td>
+                                    <td class="text-end">@row.Metrics.InProgress</td>
+                                    <td class="text-end">@row.Metrics.Completed</td>
+                                    <td class="text-end">@row.Metrics.Cancelled</td>
+                                    <td class="text-end">@FormatDecimal(row.Metrics.PendingQuantity)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4">
+            <div class="swms-page-card bg-white p-3 h-100">
+                <h2 class="h5 mb-3">Alertas</h2>
+                <div class="swms-metric-list">
+                    <div><span>Abiertas</span><strong>@_overview.Alerts.Open</strong></div>
+                    <div><span>Criticas</span><strong>@_overview.Alerts.Critical</strong></div>
+                    <div><span>Error</span><strong>@_overview.Alerts.Error</strong></div>
+                    <div><span>Warning</span><strong>@_overview.Alerts.Warning</strong></div>
+                    <div><span>Reconocidas</span><strong>@_overview.Alerts.Acknowledged</strong></div>
+                    <div><span>Resueltas</span><strong>@_overview.Alerts.Resolved</strong></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-xl-4">
+            <div class="swms-page-card bg-white p-3 h-100">
+                <h2 class="h5 mb-3">Dispositivos</h2>
+                <div class="swms-metric-list">
+                    <div><span>Registrados</span><strong>@_overview.Devices.Registered</strong></div>
+                    <div><span>Online</span><strong>@_overview.Devices.Online</strong></div>
+                    <div><span>Offline</span><strong>@_overview.Devices.Offline</strong></div>
+                    <div><span>Bloqueados</span><strong>@_overview.Devices.Blocked</strong></div>
+                </div>
+                <div class="small text-muted mt-3">
+                    Ultimo heartbeat: @FormatOptionalDate(_overview.Devices.LastHeartbeatAtUtc)
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-8">
+            <div class="swms-page-card bg-white p-3 h-100">
+                <h2 class="h5 mb-3">Contadores</h2>
+                @if (_overview.Counters.Count == 0)
+                {
+                    <div class="text-muted">No hay contadores adicionales para el periodo seleccionado.</div>
+                }
+                else
+                {
+                    <div class="row g-3">
+                        @foreach (var counter in _overview.Counters)
+                        {
+                            <div class="col-sm-6 col-lg-4">
+                                <div class="swms-counter-tile">
+                                    <span>@counter.Label</span>
+                                    <strong>@FormatDecimal(counter.Value)</strong>
+                                    @if (!string.IsNullOrWhiteSpace(counter.Unit))
+                                    {
+                                        <small>@counter.Unit</small>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private DETechOne.SmartWMS.Contracts.Dtos.Dashboard.DashboardOverviewDto? _overview;
+    private bool _isLoading;
+    private string? _error;
+
+    protected override Task OnInitializedAsync()
+    {
+        return LoadOverviewAsync();
+    }
+
+    private async Task LoadOverviewAsync()
+    {
+        _isLoading = true;
+        _error = null;
+
+        try
+        {
+            var response = await ApiClient.GetAsync<DETechOne.SmartWMS.Contracts.Responses.ApiResponse<DETechOne.SmartWMS.Contracts.Dtos.Dashboard.DashboardOverviewDto>>("api/dashboard/overview");
+            if (response is null)
+            {
+                _error = "La API no devolvio metricas.";
+                return;
+            }
+
+            if (!response.Success || response.Data is null)
+            {
+                _error = response.Message ?? "No fue posible cargar las metricas del dashboard.";
+                return;
+            }
+
+            _overview = response.Data;
+        }
+        catch
+        {
+            _error = "No fue posible conectar con la API de SmartWMS.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private IEnumerable<(string Label, DETechOne.SmartWMS.Contracts.Dtos.Dashboard.OperationStatusMetricsDto Metrics)> GetOperationRows()
+    {
+        if (_overview is null)
+        {
+            yield break;
+        }
+
+        yield return ("Picking", _overview.Picking);
+        yield return ("Packing", _overview.Packing);
+        yield return ("Shipping", _overview.Shipping);
+    }
+
+    private static string FormatDate(DateTime value)
+    {
+        return value.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
+    }
+
+    private static string FormatOptionalDate(DateTime? value)
+    {
+        return value.HasValue ? FormatDate(value.Value) : "Sin registro";
+    }
+
+    private static string FormatDecimal(decimal value)
+    {
+        return value.ToString("0.##");
+    }
+}
