@@ -1,10 +1,21 @@
 @page "/"
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager Navigation
 
 <PageTitle>SmartWMS</PageTitle>
 
-<div class="swms-home-hero">
-    <h1>SmartWMS 2.0</h1>
-    <p>Interfaz base para operación de inventario, picking, packing, shipping y dispositivos Zebra.</p>
-    <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/dashboard")'>Ir al dashboard</button>
-</div>
+<LoadingOverlay Message="Validando sesion..." IsVisible="true" />
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var target = authState.User.Identity?.IsAuthenticated == true ? "/dashboard" : "/login";
+        Navigation.NavigateTo(target, replace: true);
+    }
+}
