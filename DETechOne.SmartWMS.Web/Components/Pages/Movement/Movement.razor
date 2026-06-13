@@ -1,0 +1,479 @@
+@attribute [SmartWmsAuthorize]
+@page "/movement"
+@using DETechOne.SmartWMS.Contracts.Dtos.Movement
+@using DETechOne.SmartWMS.Contracts.Requests.Movement
+@using DETechOne.SmartWMS.Contracts.Responses
+@inject DETechOne.SmartWMS.Web.Services.Api.ISmartWmsApiClient ApiClient
+
+<PageTitle>Movement | SmartWMS</PageTitle>
+
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+    <div>
+        <h1>Movement</h1>
+        <p class="text-muted mb-0">Crea, confirma y cancela movimientos internos de inventario.</p>
+    </div>
+    <button class="btn btn-outline-primary" type="button" @onclick="LoadOpenMovementsAsync" disabled="@_isBusy">
+        @(_isBusy ? "Actualizando..." : "Actualizar abiertos")
+    </button>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(_message))
+{
+    <div class="alert alert-success">@_message</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-xl-5">
+        <div class="swms-page-card bg-white p-3 h-100">
+            <h2 class="h5 mb-3">Nuevo movimiento</h2>
+            <EditForm Model="_createForm" OnValidSubmit="CreateMovementAsync" FormName="CreateMovementForm">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Tipo movimiento</label>
+                        <InputText class="form-control" @bind-Value="_createForm.MovementType" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Tipo referencia</label>
+                        <InputText class="form-control" @bind-Value="_createForm.ReferenceType" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Referencia</label>
+                        <InputText class="form-control" @bind-Value="_createForm.ReferenceNumber" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Item</label>
+                        <InputText class="form-control" @bind-Value="_createForm.ItemCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Cantidad</label>
+                        <InputNumber class="form-control" @bind-Value="_createForm.Quantity" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">From warehouse</label>
+                        <InputText class="form-control" @bind-Value="_createForm.FromWarehouseCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">From location</label>
+                        <InputText class="form-control" @bind-Value="_createForm.FromLocationCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">To warehouse</label>
+                        <InputText class="form-control" @bind-Value="_createForm.ToWarehouseCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">To location</label>
+                        <InputText class="form-control" @bind-Value="_createForm.ToLocationCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Lot</label>
+                        <InputText class="form-control" @bind-Value="_createForm.LotNumber" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">UoM</label>
+                        <InputText class="form-control" @bind-Value="_createForm.UomCode" disabled="@_isBusy" />
+                    </div>
+                </div>
+
+                <button class="btn btn-primary mt-3" type="submit" disabled="@_isBusy">
+                    @(_isBusy ? "Creando..." : "Crear movimiento")
+                </button>
+            </EditForm>
+        </div>
+    </div>
+
+    <div class="col-xl-7">
+        <div class="swms-page-card bg-white p-3 h-100">
+            <h2 class="h5 mb-3">Ejecucion</h2>
+
+            @if (_selected is null)
+            {
+                <div class="alert alert-info mb-0">Selecciona un movimiento abierto para confirmar o cancelar.</div>
+            }
+            else
+            {
+                <div class="d-flex flex-wrap justify-content-between gap-3 mb-3">
+                    <div>
+                        <div class="fw-semibold">@_selected.MovementNumber</div>
+                        <div class="text-muted small">@_selected.MovementType · @(_selected.ReferenceNumber ?? "-")</div>
+                    </div>
+                    <StatusBadge Status="@_selected.Status" />
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <div class="swms-counter-tile">
+                            <span>Lineas</span>
+                            <strong>@_selected.Lines.Count</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="swms-counter-tile">
+                            <span>Cantidad</span>
+                            <strong>@FormatDecimal(_selected.Lines.Sum(item => item.Quantity))</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="swms-counter-tile">
+                            <span>Creado</span>
+                            <strong>@FormatDate(_selected.CreatedAtUtc)</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" type="button" @onclick="ConfirmSelectedAsync" disabled="@_isBusy">
+                    Confirmar movimiento
+                </button>
+
+                <EditForm Model="_cancelForm" OnValidSubmit="CancelSelectedAsync" FormName="CancelMovementForm">
+                    <DataAnnotationsValidator />
+                    <div class="input-group mt-3">
+                        <InputText class="form-control" @bind-Value="_cancelForm.Reason" disabled="@_isBusy" />
+                        <button class="btn btn-outline-danger" type="submit" disabled="@_isBusy">Cancelar</button>
+                    </div>
+                    <ValidationMessage For="@(() => _cancelForm.Reason)" />
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-xl-5">
+        <div class="swms-page-card bg-white p-3 h-100">
+            <h2 class="h5 mb-3">Movimientos abiertos</h2>
+            @if (_isLoadingList)
+            {
+                <div class="text-muted">Cargando movimientos abiertos...</div>
+            }
+            else if (_openMovements.Count == 0)
+            {
+                <div class="alert alert-warning mb-0">No hay movimientos abiertos.</div>
+            }
+            else
+            {
+                <div class="list-group swms-document-list">
+                    @foreach (var movement in _openMovements)
+                    {
+                        <button class="list-group-item list-group-item-action @(movement.Id == _selected?.Id ? "active" : string.Empty)" type="button" @onclick="() => SelectMovementAsync(movement.Id)">
+                            <div class="d-flex justify-content-between gap-2">
+                                <span>@movement.MovementNumber</span>
+                                <span>@movement.Status</span>
+                            </div>
+                            <small>@movement.MovementType · @movement.ReferenceType</small>
+                        </button>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="col-xl-7">
+        <div class="swms-page-card bg-white p-3 h-100">
+            <h2 class="h5 mb-3">Detalle</h2>
+            @if (_selected is null)
+            {
+                <div class="text-muted">Sin movimiento seleccionado.</div>
+            }
+            else
+            {
+                <div class="mb-3">
+                    <div class="fw-semibold">Solicitado por @_selected.RequestedBy</div>
+                    <div class="text-muted small">
+                        @if (_selected.ConfirmedAtUtc is not null)
+                        {
+                            <span>Confirmado @FormatDate(_selected.ConfirmedAtUtc.Value) por @_selected.ConfirmedBy</span>
+                        }
+                        else if (_selected.CancelledAtUtc is not null)
+                        {
+                            <span>Cancelado @FormatDate(_selected.CancelledAtUtc.Value) por @_selected.CancelledBy</span>
+                        }
+                        else
+                        {
+                            <span>Pendiente de confirmacion</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Linea</th>
+                                <th>Item</th>
+                                <th>Origen</th>
+                                <th>Destino</th>
+                                <th>Lot</th>
+                                <th>UoM</th>
+                                <th class="text-end">Cantidad</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var line in _selected.Lines)
+                            {
+                                <tr>
+                                    <td>@line.LineNumber</td>
+                                    <td>@line.ItemCode</td>
+                                    <td>@line.FromWarehouseCode / @line.FromLocationCode</td>
+                                    <td>@line.ToWarehouseCode / @line.ToLocationCode</td>
+                                    <td>@(line.LotNumber ?? "-")</td>
+                                    <td>@(line.UomCode ?? "-")</td>
+                                    <td class="text-end">@FormatDecimal(line.Quantity)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private readonly CreateMovementFormModel _createForm = new();
+    private readonly CancelMovementFormModel _cancelForm = new();
+    private List<MovementDocumentDto> _openMovements = new();
+    private MovementDocumentDto? _selected;
+    private bool _isBusy;
+    private bool _isLoadingList;
+    private string? _message;
+    private string? _error;
+
+    protected override Task OnInitializedAsync()
+    {
+        return LoadOpenMovementsAsync();
+    }
+
+    private async Task LoadOpenMovementsAsync()
+    {
+        _isLoadingList = true;
+        _error = null;
+
+        try
+        {
+            var response = await ApiClient.GetAsync<ApiResponse<IReadOnlyList<MovementDocumentDto>>>("api/movement/open");
+            if (response is null)
+            {
+                _error = "La API no devolvio movimientos abiertos.";
+                return;
+            }
+
+            if (!response.Success || response.Data is null)
+            {
+                _error = response.Message ?? "No fue posible cargar movimientos abiertos.";
+                return;
+            }
+
+            _openMovements = response.Data.ToList();
+            if (_selected is not null)
+            {
+                _selected = _openMovements.FirstOrDefault(item => item.Id == _selected.Id) ?? _selected;
+            }
+        }
+        catch
+        {
+            _error = "No fue posible conectar con la API de movimientos.";
+        }
+        finally
+        {
+            _isLoadingList = false;
+        }
+    }
+
+    private async Task CreateMovementAsync()
+    {
+        _isBusy = true;
+        ClearMessages();
+
+        try
+        {
+            var request = new CreateMovementRequest
+            {
+                MovementType = _createForm.MovementType,
+                ReferenceType = _createForm.ReferenceType,
+                ReferenceNumber = NormalizeOptional(_createForm.ReferenceNumber),
+                Lines = new[]
+                {
+                    new CreateMovementLineRequest
+                    {
+                        LineNumber = 1,
+                        ItemCode = _createForm.ItemCode,
+                        FromWarehouseCode = _createForm.FromWarehouseCode,
+                        FromLocationCode = _createForm.FromLocationCode,
+                        ToWarehouseCode = _createForm.ToWarehouseCode,
+                        ToLocationCode = _createForm.ToLocationCode,
+                        Quantity = _createForm.Quantity,
+                        LotNumber = NormalizeOptional(_createForm.LotNumber),
+                        UomCode = NormalizeOptional(_createForm.UomCode)
+                    }
+                }
+            };
+
+            var response = await ApiClient.PostAsync<CreateMovementRequest, ApiResponse<MovementDocumentDto>>("api/movement", request);
+            if (!ApplyMovementResponse(response, "No fue posible crear el movimiento."))
+            {
+                return;
+            }
+
+            _message = response?.Message ?? "Movimiento creado correctamente.";
+            await LoadOpenMovementsAsync();
+        }
+        catch
+        {
+            _error = "No fue posible conectar con la API de movimientos.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task SelectMovementAsync(Guid movementId)
+    {
+        ClearMessages();
+
+        try
+        {
+            var response = await ApiClient.GetAsync<ApiResponse<MovementDocumentDto>>($"api/movement/{movementId}");
+            ApplyMovementResponse(response, "No fue posible cargar el movimiento.");
+        }
+        catch
+        {
+            _error = "No fue posible conectar con la API de movimientos.";
+        }
+    }
+
+    private Task ConfirmSelectedAsync()
+    {
+        if (_selected is null)
+        {
+            _error = "Selecciona un movimiento antes de confirmar.";
+            return Task.CompletedTask;
+        }
+
+        var request = new ConfirmMovementRequest { MovementId = _selected.Id };
+        return PostMovementActionAsync("api/movement/confirm", request, "Movimiento confirmado correctamente.", "No fue posible confirmar el movimiento.");
+    }
+
+    private Task CancelSelectedAsync()
+    {
+        if (_selected is null)
+        {
+            _error = "Selecciona un movimiento antes de cancelar.";
+            return Task.CompletedTask;
+        }
+
+        var request = new CancelMovementRequest
+        {
+            MovementId = _selected.Id,
+            Reason = _cancelForm.Reason
+        };
+
+        return PostMovementActionAsync("api/movement/cancel", request, "Movimiento cancelado correctamente.", "No fue posible cancelar el movimiento.");
+    }
+
+    private async Task PostMovementActionAsync<TRequest>(string endpoint, TRequest request, string successMessage, string fallbackMessage)
+    {
+        _isBusy = true;
+        ClearMessages();
+
+        try
+        {
+            var response = await ApiClient.PostAsync<TRequest, ApiResponse<MovementDocumentDto>>(endpoint, request);
+            if (!ApplyMovementResponse(response, fallbackMessage))
+            {
+                return;
+            }
+
+            _message = response?.Message ?? successMessage;
+            await LoadOpenMovementsAsync();
+        }
+        catch
+        {
+            _error = "No fue posible conectar con la API de movimientos.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private bool ApplyMovementResponse(ApiResponse<MovementDocumentDto>? response, string fallbackMessage)
+    {
+        if (response is null || !response.Success || response.Data is null)
+        {
+            _error = response?.Message ?? fallbackMessage;
+            return false;
+        }
+
+        _selected = response.Data;
+        return true;
+    }
+
+    private void ClearMessages()
+    {
+        _message = null;
+        _error = null;
+    }
+
+    private static string? NormalizeOptional(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static string FormatDate(DateTime value)
+    {
+        return value.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
+    }
+
+    private static string FormatDecimal(decimal value)
+    {
+        return value.ToString("0.##");
+    }
+
+    private sealed class CreateMovementFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string MovementType { get; set; } = "Transfer";
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string ReferenceType { get; set; } = "Manual";
+
+        public string? ReferenceNumber { get; set; } = "MOV-DEMO-001";
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string ItemCode { get; set; } = "ITEM-001";
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string FromWarehouseCode { get; set; } = "WH-01";
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string FromLocationCode { get; set; } = "LOC-01";
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string ToWarehouseCode { get; set; } = "WH-01";
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string ToLocationCode { get; set; } = "LOC-02";
+
+        [System.ComponentModel.DataAnnotations.Range(typeof(decimal), "0.01", "999999999")]
+        public decimal Quantity { get; set; } = 1;
+
+        public string? LotNumber { get; set; }
+
+        public string? UomCode { get; set; } = "EA";
+    }
+
+    private sealed class CancelMovementFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string Reason { get; set; } = "Cancelacion operativa";
+    }
+}
