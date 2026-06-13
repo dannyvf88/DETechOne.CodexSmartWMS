@@ -1,0 +1,476 @@
+@attribute [SmartWmsAuthorize]
+@page "/alerts"
+@using DETechOne.SmartWMS.Contracts.Dtos.Alerts
+@using DETechOne.SmartWMS.Contracts.Requests.Alerts
+@using DETechOne.SmartWMS.Contracts.Responses
+@using DETechOne.SmartWMS.Domain.Enums
+@inject DETechOne.SmartWMS.Web.Services.Api.ISmartWmsApiClient ApiClient
+
+<PageTitle>Alerts | SmartWMS</PageTitle>
+
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+    <div>
+        <h1>Alerts</h1>
+        <p class="text-muted mb-0">Consulta, reconoce y resuelve alertas operativas.</p>
+    </div>
+    <button class="btn btn-outline-primary" type="button" @onclick="SearchAlertsAsync" disabled="@_isBusy">
+        @(_isBusy ? "Actualizando..." : "Actualizar alertas")
+    </button>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(_message))
+{
+    <div class="alert alert-success">@_message</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-xl-5">
+        <div class="swms-page-card bg-white p-3 h-100">
+            <h2 class="h5 mb-3">Filtros</h2>
+            <EditForm Model="_queryForm" OnValidSubmit="SearchAlertsAsync" FormName="AlertSearchForm">
+                <DataAnnotationsValidator />
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Severity</label>
+                        <InputSelect class="form-select" @bind-Value="_queryForm.Severity" disabled="@_isBusy">
+                            <option value="">Todas</option>
+                            @foreach (var value in Enum.GetValues<AlertSeverity>())
+                            {
+                                <option value="@value.ToString()">@value</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Status</label>
+                        <InputSelect class="form-select" @bind-Value="_queryForm.Status" disabled="@_isBusy">
+                            <option value="">Todos</option>
+                            @foreach (var value in Enum.GetValues<AlertStatus>())
+                            {
+                                <option value="@value.ToString()">@value</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Source</label>
+                        <InputText class="form-control" @bind-Value="_queryForm.Source" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Code</label>
+                        <InputText class="form-control" @bind-Value="_queryForm.Code" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Entity type</label>
+                        <InputText class="form-control" @bind-Value="_queryForm.EntityType" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Entity ID</label>
+                        <InputText class="form-control" @bind-Value="_queryForm.EntityId" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Device code</label>
+                        <InputText class="form-control" @bind-Value="_queryForm.DeviceCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Pagina</label>
+                        <InputNumber class="form-control" @bind-Value="_queryForm.Page" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Tamano</label>
+                        <InputNumber class="form-control" @bind-Value="_queryForm.PageSize" disabled="@_isBusy" />
+                    </div>
+                </div>
+
+                <button class="btn btn-primary mt-3" type="submit" disabled="@_isBusy">Buscar</button>
+            </EditForm>
+        </div>
+    </div>
+
+    <div class="col-xl-7">
+        <div class="swms-page-card bg-white p-3 h-100">
+            <h2 class="h5 mb-3">Nueva alerta</h2>
+            <EditForm Model="_createForm" OnValidSubmit="CreateAlertAsync" FormName="CreateAlertForm">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Severity</label>
+                        <InputSelect class="form-select" @bind-Value="_createForm.Severity" disabled="@_isBusy">
+                            @foreach (var value in Enum.GetValues<AlertSeverity>())
+                            {
+                                <option value="@value.ToString()">@value</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Source</label>
+                        <InputText class="form-control" @bind-Value="_createForm.Source" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Code</label>
+                        <InputText class="form-control" @bind-Value="_createForm.Code" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Titulo</label>
+                        <InputText class="form-control" @bind-Value="_createForm.Title" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Mensaje</label>
+                        <InputTextArea class="form-control" rows="3" @bind-Value="_createForm.Message" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Entity type</label>
+                        <InputText class="form-control" @bind-Value="_createForm.EntityType" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Entity ID</label>
+                        <InputText class="form-control" @bind-Value="_createForm.EntityId" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Device code</label>
+                        <InputText class="form-control" @bind-Value="_createForm.DeviceCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Correlation ID</label>
+                        <InputText class="form-control" @bind-Value="_createForm.CorrelationId" disabled="@_isBusy" />
+                    </div>
+                </div>
+
+                <button class="btn btn-primary mt-3" type="submit" disabled="@_isBusy">
+                    @(_isBusy ? "Creando..." : "Crear alerta")
+                </button>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-xl-5">
+        <div class="swms-page-card bg-white p-3 h-100">
+            <div class="d-flex flex-wrap justify-content-between gap-3 mb-3">
+                <h2 class="h5 mb-0">Alertas</h2>
+                <div class="text-muted small">@_alerts.TotalCount registros</div>
+            </div>
+
+            @if (_isBusy && _alerts.Items.Count == 0)
+            {
+                <div class="text-muted">Cargando alertas...</div>
+            }
+            else if (_alerts.Items.Count == 0)
+            {
+                <div class="alert alert-warning mb-0">No hay alertas con los filtros actuales.</div>
+            }
+            else
+            {
+                <div class="list-group swms-document-list">
+                    @foreach (var alert in _alerts.Items)
+                    {
+                        <button class="list-group-item list-group-item-action @(alert.Id == _selected?.Id ? "active" : string.Empty)" type="button" @onclick="() => SelectAlert(alert)">
+                            <div class="d-flex justify-content-between gap-2">
+                                <span>@alert.Code</span>
+                                <span>@alert.Status</span>
+                            </div>
+                            <small>@alert.Severity · @alert.Title</small>
+                        </button>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="col-xl-7">
+        <div class="swms-page-card bg-white p-3 h-100">
+            <h2 class="h5 mb-3">Detalle</h2>
+            @if (_selected is null)
+            {
+                <div class="text-muted">Sin alerta seleccionada.</div>
+            }
+            else
+            {
+                <div class="d-flex flex-wrap justify-content-between gap-3 mb-3">
+                    <div>
+                        <div class="fw-semibold">@_selected.Title</div>
+                        <div class="text-muted small">@_selected.Source · @_selected.Code</div>
+                    </div>
+                    <div class="d-flex gap-2 align-items-start">
+                        <StatusBadge Status="@_selected.Severity" />
+                        <StatusBadge Status="@_selected.Status" />
+                    </div>
+                </div>
+
+                <div class="alert alert-light border">@_selected.Message</div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <div class="swms-counter-tile">
+                            <span>Creada</span>
+                            <strong>@FormatDate(_selected.CreatedAtUtc)</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="swms-counter-tile">
+                            <span>Acknowledged</span>
+                            <strong>@FormatDate(_selected.AcknowledgedAtUtc)</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="swms-counter-tile">
+                            <span>Resolved</span>
+                            <strong>@FormatDate(_selected.ResolvedAtUtc)</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <dl class="row small">
+                    <dt class="col-sm-3">Entidad</dt>
+                    <dd class="col-sm-9">@(_selected.EntityType ?? "-") / @(_selected.EntityId ?? "-")</dd>
+                    <dt class="col-sm-3">Usuario</dt>
+                    <dd class="col-sm-9">@(_selected.UserName ?? "-")</dd>
+                    <dt class="col-sm-3">Device</dt>
+                    <dd class="col-sm-9">@(_selected.DeviceCode ?? "-")</dd>
+                    <dt class="col-sm-3">Correlation</dt>
+                    <dd class="col-sm-9">@(_selected.CorrelationId ?? "-")</dd>
+                </dl>
+
+                <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-outline-primary" type="button" @onclick="AcknowledgeSelectedAsync" disabled="@_isBusy">
+                        Reconocer
+                    </button>
+                    <button class="btn btn-outline-success" type="button" @onclick="ResolveSelectedAsync" disabled="@_isBusy">
+                        Resolver
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private readonly AlertQueryFormModel _queryForm = new();
+    private readonly CreateAlertFormModel _createForm = new();
+    private PagedResult<OperationalAlertDto> _alerts = new();
+    private OperationalAlertDto? _selected;
+    private bool _isBusy;
+    private string? _message;
+    private string? _error;
+
+    protected override Task OnInitializedAsync()
+    {
+        return SearchAlertsAsync();
+    }
+
+    private async Task SearchAlertsAsync()
+    {
+        _isBusy = true;
+        ClearMessages();
+
+        try
+        {
+            var response = await ApiClient.GetAsync<ApiResponse<PagedResult<OperationalAlertDto>>>($"api/alerts{BuildQueryString()}");
+            if (response is null || !response.Success || response.Data is null)
+            {
+                _error = response?.Message ?? "No fue posible consultar alertas.";
+                return;
+            }
+
+            _alerts = response.Data;
+            if (_selected is not null)
+            {
+                _selected = _alerts.Items.FirstOrDefault(item => item.Id == _selected.Id) ?? _selected;
+            }
+        }
+        catch
+        {
+            _error = "No fue posible conectar con la API de alertas.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task CreateAlertAsync()
+    {
+        _isBusy = true;
+        ClearMessages();
+
+        try
+        {
+            var request = new CreateOperationalAlertRequest
+            {
+                Severity = _createForm.Severity,
+                Source = _createForm.Source,
+                Code = _createForm.Code,
+                Title = _createForm.Title,
+                Message = _createForm.Message,
+                EntityType = NormalizeOptional(_createForm.EntityType),
+                EntityId = NormalizeOptional(_createForm.EntityId),
+                DeviceCode = NormalizeOptional(_createForm.DeviceCode),
+                CorrelationId = NormalizeOptional(_createForm.CorrelationId)
+            };
+
+            var response = await ApiClient.PostAsync<CreateOperationalAlertRequest, ApiResponse<OperationalAlertDto>>("api/alerts", request);
+            if (!ApplyAlertResponse(response, "No fue posible crear la alerta."))
+            {
+                return;
+            }
+
+            _message = response?.Message ?? "Alerta creada correctamente.";
+            await SearchAlertsAsync();
+        }
+        catch
+        {
+            _error = "No fue posible conectar con la API de alertas.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private void SelectAlert(OperationalAlertDto alert)
+    {
+        ClearMessages();
+        _selected = alert;
+    }
+
+    private Task AcknowledgeSelectedAsync()
+    {
+        if (_selected is null)
+        {
+            _error = "Selecciona una alerta antes de reconocerla.";
+            return Task.CompletedTask;
+        }
+
+        return PostAlertActionAsync($"api/alerts/{_selected.Id}/acknowledge", new AcknowledgeAlertRequest { AlertId = _selected.Id }, "Alerta reconocida correctamente.", "No fue posible reconocer la alerta.");
+    }
+
+    private Task ResolveSelectedAsync()
+    {
+        if (_selected is null)
+        {
+            _error = "Selecciona una alerta antes de resolverla.";
+            return Task.CompletedTask;
+        }
+
+        return PostAlertActionAsync($"api/alerts/{_selected.Id}/resolve", new ResolveAlertRequest { AlertId = _selected.Id }, "Alerta resuelta correctamente.", "No fue posible resolver la alerta.");
+    }
+
+    private async Task PostAlertActionAsync<TRequest>(string endpoint, TRequest request, string successMessage, string fallbackMessage)
+    {
+        _isBusy = true;
+        ClearMessages();
+
+        try
+        {
+            var response = await ApiClient.PostAsync<TRequest, ApiResponse<OperationalAlertDto>>(endpoint, request);
+            if (!ApplyAlertResponse(response, fallbackMessage))
+            {
+                return;
+            }
+
+            _message = response?.Message ?? successMessage;
+            await SearchAlertsAsync();
+        }
+        catch
+        {
+            _error = "No fue posible conectar con la API de alertas.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private bool ApplyAlertResponse(ApiResponse<OperationalAlertDto>? response, string fallbackMessage)
+    {
+        if (response is null || !response.Success || response.Data is null)
+        {
+            _error = response?.Message ?? fallbackMessage;
+            return false;
+        }
+
+        _selected = response.Data;
+        return true;
+    }
+
+    private string BuildQueryString()
+    {
+        var values = new Dictionary<string, string?>
+        {
+            ["severity"] = NormalizeOptional(_queryForm.Severity),
+            ["status"] = NormalizeOptional(_queryForm.Status),
+            ["source"] = NormalizeOptional(_queryForm.Source),
+            ["code"] = NormalizeOptional(_queryForm.Code),
+            ["entityType"] = NormalizeOptional(_queryForm.EntityType),
+            ["entityId"] = NormalizeOptional(_queryForm.EntityId),
+            ["deviceCode"] = NormalizeOptional(_queryForm.DeviceCode),
+            ["page"] = Math.Max(1, _queryForm.Page).ToString(),
+            ["pageSize"] = Math.Clamp(_queryForm.PageSize, 1, 200).ToString()
+        };
+
+        var query = values
+            .Where(item => !string.IsNullOrWhiteSpace(item.Value))
+            .Select(item => $"{Uri.EscapeDataString(item.Key)}={Uri.EscapeDataString(item.Value!)}");
+
+        return "?" + string.Join("&", query);
+    }
+
+    private void ClearMessages()
+    {
+        _message = null;
+        _error = null;
+    }
+
+    private static string? NormalizeOptional(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static string FormatDate(DateTime? value)
+    {
+        return value.HasValue ? value.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm") : "-";
+    }
+
+    private sealed class AlertQueryFormModel
+    {
+        public string? Severity { get; set; }
+        public string? Status { get; set; } = AlertStatus.Open.ToString();
+        public string? Source { get; set; }
+        public string? Code { get; set; }
+        public string? EntityType { get; set; }
+        public string? EntityId { get; set; }
+        public string? DeviceCode { get; set; }
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 50;
+    }
+
+    private sealed class CreateAlertFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string Severity { get; set; } = AlertSeverity.Warning.ToString();
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string Source { get; set; } = "SmartWMS.Web";
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string Code { get; set; } = "MANUAL_ALERT";
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string Title { get; set; } = "Revision operativa requerida";
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string Message { get; set; } = "Alerta manual generada desde la UI operacional.";
+
+        public string? EntityType { get; set; } = "OperationalCheck";
+        public string? EntityId { get; set; } = Guid.NewGuid().ToString();
+        public string? DeviceCode { get; set; } = "WEB";
+        public string? CorrelationId { get; set; }
+    }
+}
