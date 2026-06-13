@@ -12,6 +12,22 @@ El working tree estaba limpio al iniciar esta bitacora. La unica modificacion nu
 
 ## Avance registrado
 
+### Fase 11 - Corte 2026-06-13 posterior
+
+- Devices UI operacional
+  - Pantalla `/devices` reemplazada desde placeholder a operacion funcional.
+  - Registro de dispositivos contra `api/devices/register`.
+  - Consulta de dispositivos online contra `api/devices/online`.
+  - Consulta de detalle contra `api/devices/{deviceCode}`.
+  - Heartbeat contra `api/devices/heartbeat`.
+  - Inicio, scan, completado y cancelacion de sesiones scanner contra endpoints `api/devices/scanner-sessions/*`.
+
+- Movement UI operacional
+  - Nueva pantalla `/movement`.
+  - Entrada agregada al menu lateral.
+  - Listado de movimientos abiertos contra `api/movement/open`.
+  - Creacion, seleccion, confirmacion y cancelacion de movimientos internos contra API.
+
 ### Base del repositorio
 
 - `0629cf8 Initial SmartWMS project import`
@@ -84,9 +100,11 @@ Estamos al cierre funcional de las pantallas operativas principales de Fase 11:
 
 - Dashboard: conectado.
 - Inventory: conectado.
+- Movement: conectado.
 - Picking: conectado.
 - Packing: conectado.
 - Shipping: conectado.
+- Devices: conectado.
 - Autenticacion UI: estabilizada y documentada.
 
 La rama `codex/phase-11-operational-pages` esta publicada en remoto y contiene el ultimo avance operativo.
@@ -95,7 +113,7 @@ La rama `codex/phase-11-operational-pages` esta publicada en remoto y contiene e
 
 Pendientes inmediatos recomendados:
 
-1. Revisar si las pantallas `Devices`, `Movement`, `Audit`, `Alerts`, `SAP` o flujos E2E requieren UI operacional en Fase 11.
+1. Revisar si las pantallas `Audit`, `Alerts`, `SAP` o flujos E2E requieren UI operacional en Fase 11.
 2. Agregar pruebas automatizadas de UI o componentes para las paginas nuevas si el proyecto adopta bUnit, Playwright u otra herramienta.
 3. Validar navegacion completa con usuario real o token real contra API levantada.
 4. Revisar UX de errores por endpoint para distinguir validacion de negocio, expiracion de sesion y falla de conectividad.
@@ -107,12 +125,11 @@ Pendientes inmediatos recomendados:
 
 El siguiente bloque natural es definir y construir la siguiente pantalla operacional faltante. Por el estado actual del repo, las opciones mas probables son:
 
-- Devices: administracion/consulta de dispositivos Zebra TC15 y telemetria basica.
-- Movement: movimientos de inventario entre ubicaciones o almacenes.
 - Audit/Alerts: consulta operacional de auditoria y alertas.
+- SAP: visibilidad de conectividad, metadata y documentos integrados.
 - E2E Operations: pantalla resumen para ejecutar o monitorear el flujo completo.
 
-Recomendacion pragmatica: continuar con `Devices` si el objetivo inmediato es operacion en piso con handhelds; continuar con `Movement` si el objetivo es completar los movimientos internos del almacen antes de cerrar Fase 11.
+Recomendacion pragmatica: continuar con `Audit/Alerts` si el objetivo inmediato es observabilidad operacional; continuar con `E2E Operations` si el objetivo es validar el flujo completo antes de cerrar Fase 11.
 
 ## Convencion para actualizar esta bitacora
 
