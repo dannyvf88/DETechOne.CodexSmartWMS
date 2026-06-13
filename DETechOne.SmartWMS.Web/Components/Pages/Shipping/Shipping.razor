@@ -1,11 +1,491 @@
 @attribute [SmartWmsAuthorize]
 @page "/shipping"
+@inject DETechOne.SmartWMS.Web.Services.Api.ISmartWmsApiClient ApiClient
 
 <PageTitle>Shipping | SmartWMS</PageTitle>
 
-<h1>Shipping</h1>
-<p class="text-muted">Pantalla base creada en Fase 11.0. La integración funcional se implementará en las fases específicas de UI.</p>
-
-<div class="alert alert-info">
-    UI Foundation lista para consumir endpoints del backend SmartWMS.
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+    <div>
+        <h1>Shipping</h1>
+        <p class="text-muted mb-0">Crea, confirma y prepara entregas de shipping contra la API.</p>
+    </div>
+    <button class="btn btn-outline-primary" type="button" @onclick="LoadOpenShippingsAsync" disabled="@_isBusy">
+        @(_isBusy ? "Actualizando..." : "Actualizar abiertos")
+    </button>
 </div>
+
+@if (!string.IsNullOrWhiteSpace(_message))
+{
+    <div class="alert alert-success">@_message</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-xl-5">
+        <div class="swms-page-card bg-white p-3 h-100">
+            <h2 class="h5 mb-3">Nuevo shipping</h2>
+            <EditForm Model="_createForm" OnValidSubmit="CreateShippingAsync" FormName="CreateShippingForm">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Packing ID</label>
+                        <InputText class="form-control" @bind-Value="_createForm.PackingIdText" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Packing number</label>
+                        <InputText class="form-control" @bind-Value="_createForm.PackingNumber" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Warehouse</label>
+                        <InputText class="form-control" @bind-Value="_createForm.WarehouseCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Customer code</label>
+                        <InputText class="form-control" @bind-Value="_createForm.CustomerCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Customer name</label>
+                        <InputText class="form-control" @bind-Value="_createForm.CustomerName" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Item</label>
+                        <InputText class="form-control" @bind-Value="_createForm.ItemCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Location</label>
+                        <InputText class="form-control" @bind-Value="_createForm.LocationCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Cantidad packed</label>
+                        <InputNumber class="form-control" @bind-Value="_createForm.PackedQuantity" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Lot</label>
+                        <InputText class="form-control" @bind-Value="_createForm.LotNumber" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">UoM</label>
+                        <InputText class="form-control" @bind-Value="_createForm.UomCode" disabled="@_isBusy" />
+                    </div>
+                </div>
+
+                <button class="btn btn-primary mt-3" type="submit" disabled="@_isBusy">
+                    @(_isBusy ? "Creando..." : "Crear shipping")
+                </button>
+            </EditForm>
+        </div>
+    </div>
+
+    <div class="col-xl-7">
+        <div class="swms-page-card bg-white p-3 h-100">
+            <h2 class="h5 mb-3">Ejecucion</h2>
+
+            @if (_selected is null)
+            {
+                <div class="alert alert-info mb-0">Selecciona un shipping abierto para confirmar, crear delivery o cancelar.</div>
+            }
+            else
+            {
+                <div class="d-flex flex-wrap justify-content-between gap-3 mb-3">
+                    <div>
+                        <div class="fw-semibold">@_selected.ShippingNumber</div>
+                        <div class="text-muted small">Packing @_selected.PackingNumber · @_selected.CustomerCode</div>
+                    </div>
+                    <StatusBadge Status="@_selected.Status" />
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <div class="swms-counter-tile">
+                            <span>Packed</span>
+                            <strong>@FormatDecimal(_selected.PackedQuantity)</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="swms-counter-tile">
+                            <span>Delivery DocEntry</span>
+                            <strong>@(_selected.DeliveryDocEntry?.ToString() ?? "-")</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="swms-counter-tile">
+                            <span>Delivery DocNum</span>
+                            <strong>@(_selected.DeliveryDocNum?.ToString() ?? "-")</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-primary" type="button" @onclick="ConfirmSelectedAsync" disabled="@_isBusy">
+                        Confirmar shipping
+                    </button>
+                    <button class="btn btn-outline-success" type="button" @onclick="CreateDeliveryAsync" disabled="@_isBusy">
+                        Crear delivery SAP
+                    </button>
+                </div>
+
+                <EditForm Model="_cancelForm" OnValidSubmit="CancelSelectedAsync" FormName="CancelShippingForm">
+                    <DataAnnotationsValidator />
+                    <div class="input-group mt-3">
+                        <InputText class="form-control" @bind-Value="_cancelForm.Reason" disabled="@_isBusy" />
+                        <button class="btn btn-outline-danger" type="submit" disabled="@_isBusy">Cancelar</button>
+                    </div>
+                    <ValidationMessage For="@(() => _cancelForm.Reason)" />
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-xl-5">
+        <div class="swms-page-card bg-white p-3 h-100">
+            <h2 class="h5 mb-3">Shippings abiertos</h2>
+            @if (_isLoadingList)
+            {
+                <div class="text-muted">Cargando documentos abiertos...</div>
+            }
+            else if (_openShippings.Count == 0)
+            {
+                <div class="alert alert-warning mb-0">No hay shippings abiertos.</div>
+            }
+            else
+            {
+                <div class="list-group swms-document-list">
+                    @foreach (var shipping in _openShippings)
+                    {
+                        <button class="list-group-item list-group-item-action @(shipping.Id == _selected?.Id ? "active" : string.Empty)" type="button" @onclick="() => SelectShippingAsync(shipping.Id)">
+                            <div class="d-flex justify-content-between gap-2">
+                                <span>@shipping.ShippingNumber</span>
+                                <span>@shipping.Status</span>
+                            </div>
+                            <small>@shipping.CustomerCode · @shipping.PackingNumber</small>
+                        </button>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="col-xl-7">
+        <div class="swms-page-card bg-white p-3 h-100">
+            <h2 class="h5 mb-3">Detalle</h2>
+            @if (_selected is null)
+            {
+                <div class="text-muted">Sin documento seleccionado.</div>
+            }
+            else
+            {
+                <div class="mb-3">
+                    <div class="fw-semibold">@_selected.CustomerName</div>
+                    <div class="text-muted small">
+                        Creado @FormatDate(_selected.CreatedAtUtc)
+                        @if (_selected.ConfirmedAtUtc is not null)
+                        {
+                            <span> · Confirmado @FormatDate(_selected.ConfirmedAtUtc.Value)</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Linea</th>
+                                <th>Item</th>
+                                <th>Warehouse</th>
+                                <th>Location</th>
+                                <th>Lot</th>
+                                <th class="text-end">Packed</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var line in _selected.Lines)
+                            {
+                                <tr>
+                                    <td>@line.LineNumber</td>
+                                    <td>@line.ItemCode</td>
+                                    <td>@line.WarehouseCode</td>
+                                    <td>@(line.LocationCode ?? "-")</td>
+                                    <td>@(line.LotNumber ?? "-")</td>
+                                    <td class="text-end">@FormatDecimal(line.PackedQuantity)</td>
+                                    <td><StatusBadge Status="@line.Status" /></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private readonly CreateShippingFormModel _createForm = new();
+    private readonly CancelShippingFormModel _cancelForm = new();
+    private List<DETechOne.SmartWMS.Contracts.Dtos.Shipping.ShippingDocumentDto> _openShippings = new();
+    private DETechOne.SmartWMS.Contracts.Dtos.Shipping.ShippingDocumentDto? _selected;
+    private bool _isBusy;
+    private bool _isLoadingList;
+    private string? _error;
+    private string? _message;
+
+    protected override Task OnInitializedAsync()
+    {
+        return LoadOpenShippingsAsync();
+    }
+
+    private async Task LoadOpenShippingsAsync()
+    {
+        _isLoadingList = true;
+        _error = null;
+
+        try
+        {
+            var response = await ApiClient.GetAsync<DETechOne.SmartWMS.Contracts.Responses.ApiResponse<IReadOnlyList<DETechOne.SmartWMS.Contracts.Dtos.Shipping.ShippingDocumentDto>>>("api/shipping/open");
+            if (response is null)
+            {
+                _error = "La API no devolvio shippings abiertos.";
+                return;
+            }
+
+            if (!response.Success || response.Data is null)
+            {
+                _error = response.Message ?? "No fue posible cargar shippings abiertos.";
+                return;
+            }
+
+            _openShippings = response.Data.ToList();
+            if (_selected is not null)
+            {
+                _selected = _openShippings.FirstOrDefault(item => item.Id == _selected.Id) ?? _selected;
+            }
+        }
+        catch
+        {
+            _error = "No fue posible conectar con la API de shipping.";
+        }
+        finally
+        {
+            _isLoadingList = false;
+        }
+    }
+
+    private async Task CreateShippingAsync()
+    {
+        _isBusy = true;
+        ClearMessages();
+
+        try
+        {
+            if (!Guid.TryParse(_createForm.PackingIdText, out var packingId))
+            {
+                _error = "Packing ID debe ser un GUID valido.";
+                return;
+            }
+
+            var request = new DETechOne.SmartWMS.Contracts.Requests.Shipping.CreateShippingRequest
+            {
+                PackingId = packingId,
+                PackingNumber = _createForm.PackingNumber,
+                WarehouseCode = _createForm.WarehouseCode,
+                CustomerCode = _createForm.CustomerCode,
+                CustomerName = _createForm.CustomerName,
+                Lines = new[]
+                {
+                    new DETechOne.SmartWMS.Contracts.Requests.Shipping.CreateShippingLineRequest
+                    {
+                        LineNumber = 1,
+                        ItemCode = _createForm.ItemCode,
+                        WarehouseCode = _createForm.WarehouseCode,
+                        LocationCode = NormalizeOptional(_createForm.LocationCode),
+                        PackedQuantity = _createForm.PackedQuantity,
+                        LotNumber = NormalizeOptional(_createForm.LotNumber),
+                        UomCode = NormalizeOptional(_createForm.UomCode)
+                    }
+                }
+            };
+
+            var response = await ApiClient.PostAsync<DETechOne.SmartWMS.Contracts.Requests.Shipping.CreateShippingRequest, DETechOne.SmartWMS.Contracts.Responses.ApiResponse<DETechOne.SmartWMS.Contracts.Dtos.Shipping.ShippingDocumentDto>>("api/shipping", request);
+            if (!TryApplyDocumentResponse(response, "No fue posible crear el shipping."))
+            {
+                return;
+            }
+
+            _message = response?.Message ?? "Shipping creado correctamente.";
+            await LoadOpenShippingsAsync();
+        }
+        catch
+        {
+            _error = "No fue posible conectar con la API de shipping.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task SelectShippingAsync(Guid shippingId)
+    {
+        ClearMessages();
+
+        try
+        {
+            var response = await ApiClient.GetAsync<DETechOne.SmartWMS.Contracts.Responses.ApiResponse<DETechOne.SmartWMS.Contracts.Dtos.Shipping.ShippingDocumentDto>>($"api/shipping/{shippingId}");
+            TryApplyDocumentResponse(response, "No fue posible cargar el shipping.");
+        }
+        catch
+        {
+            _error = "No fue posible conectar con la API de shipping.";
+        }
+    }
+
+    private Task ConfirmSelectedAsync()
+    {
+        if (_selected is null)
+        {
+            _error = "Selecciona un shipping antes de confirmar.";
+            return Task.CompletedTask;
+        }
+
+        var request = new DETechOne.SmartWMS.Contracts.Requests.Shipping.ConfirmShippingRequest { ShippingId = _selected.Id };
+        return PostActionAsync("api/shipping/confirm", request, "Shipping confirmado correctamente.", "No fue posible confirmar el shipping.");
+    }
+
+    private Task CreateDeliveryAsync()
+    {
+        if (_selected is null)
+        {
+            _error = "Selecciona un shipping antes de crear delivery.";
+            return Task.CompletedTask;
+        }
+
+        var request = new DETechOne.SmartWMS.Contracts.Requests.Shipping.CreateSapDeliveryRequest { ShippingId = _selected.Id };
+        return PostActionAsync("api/shipping/create-delivery", request, "Delivery SAP creado correctamente.", "No fue posible crear delivery SAP.");
+    }
+
+    private Task CancelSelectedAsync()
+    {
+        if (_selected is null)
+        {
+            _error = "Selecciona un shipping antes de cancelar.";
+            return Task.CompletedTask;
+        }
+
+        var request = new DETechOne.SmartWMS.Contracts.Requests.Shipping.CancelShippingRequest
+        {
+            ShippingId = _selected.Id,
+            Reason = _cancelForm.Reason
+        };
+
+        return PostActionAsync("api/shipping/cancel", request, "Shipping cancelado correctamente.", "No fue posible cancelar el shipping.");
+    }
+
+    private async Task PostActionAsync<TRequest>(string endpoint, TRequest request, string successMessage, string fallbackMessage)
+    {
+        _isBusy = true;
+        ClearMessages();
+
+        try
+        {
+            var response = await ApiClient.PostAsync<TRequest, DETechOne.SmartWMS.Contracts.Responses.ApiResponse<DETechOne.SmartWMS.Contracts.Dtos.Shipping.ShippingDocumentDto>>(endpoint, request);
+            if (!TryApplyDocumentResponse(response, fallbackMessage))
+            {
+                return;
+            }
+
+            _message = response?.Message ?? successMessage;
+            await LoadOpenShippingsAsync();
+        }
+        catch
+        {
+            _error = "No fue posible conectar con la API de shipping.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private bool TryApplyDocumentResponse(DETechOne.SmartWMS.Contracts.Responses.ApiResponse<DETechOne.SmartWMS.Contracts.Dtos.Shipping.ShippingDocumentDto>? response, string fallbackMessage)
+    {
+        if (response is null)
+        {
+            _error = "La API no devolvio respuesta.";
+            return false;
+        }
+
+        if (!response.Success || response.Data is null)
+        {
+            _error = response.Message ?? fallbackMessage;
+            return false;
+        }
+
+        _selected = response.Data;
+        return true;
+    }
+
+    private void ClearMessages()
+    {
+        _error = null;
+        _message = null;
+    }
+
+    private static string? NormalizeOptional(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static string FormatDate(DateTime value)
+    {
+        return value.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
+    }
+
+    private static string FormatDecimal(decimal value)
+    {
+        return value.ToString("0.##");
+    }
+
+    private sealed class CreateShippingFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string PackingIdText { get; set; } = Guid.NewGuid().ToString();
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string PackingNumber { get; set; } = "PKG-MANUAL-001";
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string WarehouseCode { get; set; } = "WH-01";
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string CustomerCode { get; set; } = "CUST-001";
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string CustomerName { get; set; } = "Cliente demostracion";
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string ItemCode { get; set; } = "ITEM-001";
+
+        public string? LocationCode { get; set; } = "LOC-01";
+
+        [System.ComponentModel.DataAnnotations.Range(typeof(decimal), "0.01", "999999999")]
+        public decimal PackedQuantity { get; set; } = 1;
+
+        public string? LotNumber { get; set; }
+
+        public string? UomCode { get; set; } = "EA";
+    }
+
+    private sealed class CancelShippingFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string Reason { get; set; } = "Cancelacion operativa";
+    }
+}
