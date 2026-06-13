@@ -1,11 +1,362 @@
 @attribute [SmartWmsAuthorize]
 @page "/inventory"
+@inject DETechOne.SmartWMS.Web.Services.Api.ISmartWmsApiClient ApiClient
 
 <PageTitle>Inventory | SmartWMS</PageTitle>
 
-<h1>Inventory</h1>
-<p class="text-muted">Pantalla base creada en Fase 11.0. La integración funcional se implementará en las fases específicas de UI.</p>
-
-<div class="alert alert-info">
-    UI Foundation lista para consumir endpoints del backend SmartWMS.
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+    <div>
+        <h1>Inventory</h1>
+        <p class="text-muted mb-0">Consulta disponibilidad y registra ajustes operativos contra la API.</p>
+    </div>
 </div>
+
+@if (!string.IsNullOrWhiteSpace(_message))
+{
+    <div class="alert alert-success">@_message</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-xl-5">
+        <div class="swms-page-card bg-white p-3 h-100">
+            <h2 class="h5 mb-3">Disponibilidad</h2>
+            <EditForm Model="_availabilityForm" OnValidSubmit="CheckAvailabilityAsync" FormName="InventoryAvailabilityForm">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Item</label>
+                        <InputText class="form-control" @bind-Value="_availabilityForm.ItemCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Warehouse</label>
+                        <InputText class="form-control" @bind-Value="_availabilityForm.WarehouseCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Location</label>
+                        <InputText class="form-control" @bind-Value="_availabilityForm.LocationCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Lot</label>
+                        <InputText class="form-control" @bind-Value="_availabilityForm.LotNumber" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Cantidad requerida</label>
+                        <InputNumber class="form-control" @bind-Value="_availabilityForm.RequestedQuantity" disabled="@_isBusy" />
+                    </div>
+                </div>
+
+                <button class="btn btn-primary mt-3" type="submit" disabled="@_isBusy">
+                    @(_isBusy ? "Consultando..." : "Consultar")
+                </button>
+            </EditForm>
+        </div>
+    </div>
+
+    <div class="col-xl-7">
+        <div class="swms-page-card bg-white p-3 h-100">
+            <h2 class="h5 mb-3">Ajuste de inventario</h2>
+            <EditForm Model="_adjustmentForm" OnValidSubmit="AdjustInventoryAsync" FormName="InventoryAdjustmentForm">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Item</label>
+                        <InputText class="form-control" @bind-Value="_adjustmentForm.ItemCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Warehouse</label>
+                        <InputText class="form-control" @bind-Value="_adjustmentForm.WarehouseCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Location</label>
+                        <InputText class="form-control" @bind-Value="_adjustmentForm.LocationCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Lot</label>
+                        <InputText class="form-control" @bind-Value="_adjustmentForm.LotNumber" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Cantidad</label>
+                        <InputNumber class="form-control" @bind-Value="_adjustmentForm.Quantity" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Tipo</label>
+                        <InputSelect class="form-select" @bind-Value="_adjustmentForm.AdjustmentType" disabled="@_isBusy">
+                            <option value="IN">Entrada</option>
+                            <option value="OUT">Salida</option>
+                        </InputSelect>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Razon</label>
+                        <InputText class="form-control" @bind-Value="_adjustmentForm.ReasonCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Referencia tipo</label>
+                        <InputText class="form-control" @bind-Value="_adjustmentForm.ReferenceType" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Referencia</label>
+                        <InputText class="form-control" @bind-Value="_adjustmentForm.ReferenceNumber" disabled="@_isBusy" />
+                    </div>
+                </div>
+
+                <button class="btn btn-primary mt-3" type="submit" disabled="@_isBusy">
+                    @(_isBusy ? "Guardando..." : "Registrar ajuste")
+                </button>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@if (_availability is not null)
+{
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="swms-kpi-card">
+                <span>On hand</span>
+                <strong>@FormatDecimal(_availability.OnHandQuantity)</strong>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="swms-kpi-card">
+                <span>Reservado</span>
+                <strong>@FormatDecimal(_availability.ReservedQuantity)</strong>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="swms-kpi-card">
+                <span>Disponible</span>
+                <strong>@FormatDecimal(_availability.AvailableQuantity)</strong>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="swms-kpi-card">
+                <span>Estatus</span>
+                <strong class="fs-4">@_availability.Status</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="swms-page-card bg-white p-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+            <h2 class="h5 mb-0">Balances encontrados</h2>
+            <span class="text-muted small">@_availability.ItemCode / @_availability.WarehouseCode</span>
+        </div>
+
+        @if (_availability.Balances.Count == 0)
+        {
+            <div class="alert alert-warning mb-0">No hay balances para los filtros seleccionados.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Warehouse</th>
+                            <th>Location</th>
+                            <th>Lot</th>
+                            <th class="text-end">On hand</th>
+                            <th class="text-end">Reservado</th>
+                            <th class="text-end">Disponible</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var balance in _availability.Balances)
+                        {
+                            <tr>
+                                <td>@balance.ItemCode</td>
+                                <td>@balance.WarehouseCode</td>
+                                <td>@balance.LocationCode</td>
+                                <td>@(balance.LotNumber ?? "-")</td>
+                                <td class="text-end">@FormatDecimal(balance.OnHandQuantity)</td>
+                                <td class="text-end">@FormatDecimal(balance.ReservedQuantity)</td>
+                                <td class="text-end">@FormatDecimal(balance.AvailableQuantity)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private readonly AvailabilityFormModel _availabilityForm = new();
+    private readonly AdjustmentFormModel _adjustmentForm = new();
+    private DETechOne.SmartWMS.Contracts.Dtos.Inventory.InventoryAvailabilityDto? _availability;
+    private bool _isBusy;
+    private string? _error;
+    private string? _message;
+
+    private async Task CheckAvailabilityAsync()
+    {
+        _isBusy = true;
+        _error = null;
+        _message = null;
+
+        try
+        {
+            var endpoint = BuildAvailabilityEndpoint();
+            var response = await ApiClient.GetAsync<DETechOne.SmartWMS.Contracts.Responses.ApiResponse<DETechOne.SmartWMS.Contracts.Dtos.Inventory.InventoryAvailabilityDto>>(endpoint);
+            if (response is null)
+            {
+                _error = "La API no devolvio disponibilidad.";
+                return;
+            }
+
+            if (!response.Success || response.Data is null)
+            {
+                _error = response.Message ?? "No fue posible calcular disponibilidad.";
+                return;
+            }
+
+            _availability = response.Data;
+        }
+        catch
+        {
+            _error = "No fue posible conectar con la API de inventario.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task AdjustInventoryAsync()
+    {
+        _isBusy = true;
+        _error = null;
+        _message = null;
+
+        try
+        {
+            var request = new DETechOne.SmartWMS.Contracts.Requests.Inventory.AdjustInventoryRequest
+            {
+                ItemCode = _adjustmentForm.ItemCode,
+                WarehouseCode = _adjustmentForm.WarehouseCode,
+                LocationCode = _adjustmentForm.LocationCode,
+                LotNumber = NormalizeOptional(_adjustmentForm.LotNumber),
+                Quantity = _adjustmentForm.Quantity,
+                AdjustmentType = _adjustmentForm.AdjustmentType,
+                ReasonCode = _adjustmentForm.ReasonCode,
+                ReferenceType = NormalizeOptional(_adjustmentForm.ReferenceType),
+                ReferenceNumber = NormalizeOptional(_adjustmentForm.ReferenceNumber)
+            };
+
+            var response = await ApiClient.PostAsync<DETechOne.SmartWMS.Contracts.Requests.Inventory.AdjustInventoryRequest, DETechOne.SmartWMS.Contracts.Responses.ApiResponse<DETechOne.SmartWMS.Contracts.Dtos.Inventory.InventoryBalanceDto>>("api/inventory/adjustments", request);
+            if (response is null)
+            {
+                _error = "La API no devolvio resultado del ajuste.";
+                return;
+            }
+
+            if (!response.Success || response.Data is null)
+            {
+                _error = response.Message ?? "No fue posible registrar el ajuste.";
+                return;
+            }
+
+            _message = response.Message ?? "Ajuste registrado correctamente.";
+            CopyAdjustmentToAvailability();
+            await CheckAvailabilityAsync();
+        }
+        catch
+        {
+            _error = "No fue posible conectar con la API de inventario.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private string BuildAvailabilityEndpoint()
+    {
+        var values = new Dictionary<string, string?>
+        {
+            ["itemCode"] = _availabilityForm.ItemCode,
+            ["warehouseCode"] = _availabilityForm.WarehouseCode,
+            ["locationCode"] = NormalizeOptional(_availabilityForm.LocationCode),
+            ["lotNumber"] = NormalizeOptional(_availabilityForm.LotNumber),
+            ["requestedQuantity"] = _availabilityForm.RequestedQuantity.ToString(System.Globalization.CultureInfo.InvariantCulture)
+        };
+
+        var query = string.Join("&", values
+            .Where(pair => !string.IsNullOrWhiteSpace(pair.Value))
+            .Select(pair => $"{Uri.EscapeDataString(pair.Key)}={Uri.EscapeDataString(pair.Value!)}"));
+
+        return $"api/inventory/availability?{query}";
+    }
+
+    private void CopyAdjustmentToAvailability()
+    {
+        _availabilityForm.ItemCode = _adjustmentForm.ItemCode;
+        _availabilityForm.WarehouseCode = _adjustmentForm.WarehouseCode;
+        _availabilityForm.LocationCode = _adjustmentForm.LocationCode;
+        _availabilityForm.LotNumber = _adjustmentForm.LotNumber;
+        _availabilityForm.RequestedQuantity = Math.Max(1, _adjustmentForm.Quantity);
+    }
+
+    private static string? NormalizeOptional(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static string FormatDecimal(decimal value)
+    {
+        return value.ToString("0.##");
+    }
+
+    private sealed class AvailabilityFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string ItemCode { get; set; } = "ITEM-001";
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string WarehouseCode { get; set; } = "WH-01";
+
+        public string? LocationCode { get; set; } = "LOC-01";
+
+        public string? LotNumber { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Range(typeof(decimal), "0.01", "999999999")]
+        public decimal RequestedQuantity { get; set; } = 1;
+    }
+
+    private sealed class AdjustmentFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string ItemCode { get; set; } = "ITEM-001";
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string WarehouseCode { get; set; } = "WH-01";
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string LocationCode { get; set; } = "LOC-01";
+
+        public string? LotNumber { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Range(typeof(decimal), "0.01", "999999999")]
+        public decimal Quantity { get; set; } = 1;
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string AdjustmentType { get; set; } = "IN";
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string ReasonCode { get; set; } = "MANUAL";
+
+        public string? ReferenceType { get; set; }
+
+        public string? ReferenceNumber { get; set; }
+    }
+}
