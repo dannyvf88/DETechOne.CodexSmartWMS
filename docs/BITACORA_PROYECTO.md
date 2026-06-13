@@ -1,0 +1,127 @@
+# Bitacora del Proyecto SmartWMS
+
+Fecha de corte: 2026-06-13
+Repositorio local: `C:\Datos\Repositorios\SmrtWMS_20\Codex\DETechOne.CodexSmartWMS`
+Rama actual: `codex/phase-11-operational-pages`
+
+## Estado general
+
+El proyecto ya fue importado a Git, tiene rama `main` sincronizada con remoto y se esta trabajando la Fase 11 sobre UI operacional. La rama activa contiene la base de autenticacion estabilizada y varias pantallas operativas conectadas a endpoints reales de la API.
+
+El working tree estaba limpio al iniciar esta bitacora. La unica modificacion nueva de este corte es este documento.
+
+## Avance registrado
+
+### Base del repositorio
+
+- `0629cf8 Initial SmartWMS project import`
+  - Importacion inicial del proyecto SmartWMS.
+  - Solucion .NET organizada por capas: API, Application, Contracts, Domain, Infrastructure, SAP, Installer, Tasks, Tests y Web.
+
+### Fase 11 - UI foundation y autenticacion
+
+- `f9f8976 Stabilize authentication UI routes`
+  - Estabilizacion de rutas y flujo de autenticacion en la UI.
+
+- `db5ee41 Handle API error responses in web client`
+  - Manejo de respuestas de error de API desde el cliente web.
+
+- `1017bdf Document authentication UI E2E validation`
+  - Documentacion de validacion E2E de autenticacion.
+  - Este cambio ya esta integrado en `main`.
+
+### Fase 11 - Pantallas operacionales
+
+Rama: `codex/phase-11-operational-pages`
+
+- `7e31f8c Connect dashboard to operational metrics API`
+  - Dashboard conectado a `api/dashboard/overview`.
+  - Uso de DTOs desde `DETechOne.SmartWMS.Contracts`.
+  - Ajustes visuales en estilos compartidos.
+
+- `9f84d4c Add operational inventory page`
+  - Pantalla Inventory con consulta de disponibilidad.
+  - Formulario para ajustes de inventario contra `api/inventory/adjustments`.
+
+- `8b244a1 Add operational picking page`
+  - Pantalla Picking con listado de documentos abiertos.
+  - Creacion, seleccion, escaneo, cierre y cancelacion de picking contra API.
+
+- `5c04154 Add operational packing page`
+  - Pantalla Packing con listado de documentos abiertos.
+  - Creacion, seleccion, empaque de lineas, cierre y cancelacion de packing contra API.
+
+- `cffbbab Add operational shipping page`
+  - Pantalla Shipping con listado de documentos abiertos.
+  - Creacion, seleccion, confirmacion, creacion de delivery SAP y cancelacion de shipping contra API.
+
+## Validaciones ejecutadas
+
+Ultima validacion completa registrada:
+
+- `dotnet build DETechOne.SmartWMS.sln`
+  - Resultado: correcto, 0 errores.
+
+- `dotnet test DETechOne.SmartWMS.sln --no-build`
+  - Resultado: correcto, 13 pruebas aprobadas.
+
+- Smoke API Shipping
+  - Crear shipping: correcto.
+  - Confirmar shipping: correcto.
+  - Consultar shippings abiertos: correcto.
+
+- Smoke Web `/shipping`
+  - Resultado: HTTP 200.
+
+Notas de entorno:
+
+- Para endpoints protegidos de API conviene usar HTTPS. Si se usa HTTP, `UseHttpsRedirection()` puede redirigir y perder el header `Authorization`, provocando falsos 401.
+- La validacion visual con navegador integrado no estuvo disponible por error de creacion de proceso del entorno. Se sustituyo por smoke HTTP.
+
+## Punto actual
+
+Estamos al cierre funcional de las pantallas operativas principales de Fase 11:
+
+- Dashboard: conectado.
+- Inventory: conectado.
+- Picking: conectado.
+- Packing: conectado.
+- Shipping: conectado.
+- Autenticacion UI: estabilizada y documentada.
+
+La rama `codex/phase-11-operational-pages` esta publicada en remoto y contiene el ultimo avance operativo.
+
+## Pendientes tecnicos
+
+Pendientes inmediatos recomendados:
+
+1. Revisar si las pantallas `Devices`, `Movement`, `Audit`, `Alerts`, `SAP` o flujos E2E requieren UI operacional en Fase 11.
+2. Agregar pruebas automatizadas de UI o componentes para las paginas nuevas si el proyecto adopta bUnit, Playwright u otra herramienta.
+3. Validar navegacion completa con usuario real o token real contra API levantada.
+4. Revisar UX de errores por endpoint para distinguir validacion de negocio, expiracion de sesion y falla de conectividad.
+5. Confirmar si los formularios manuales actuales deben reemplazarse por busquedas reales de documentos origen.
+6. Ejecutar una pasada end-to-end completa: Sales Order SAP -> Picking -> Packing -> Shipping -> Delivery SAP.
+7. Preparar merge de `codex/phase-11-operational-pages` hacia `main` cuando el alcance de UI operacional quede aprobado.
+
+## Siguiente paso recomendado
+
+El siguiente bloque natural es definir y construir la siguiente pantalla operacional faltante. Por el estado actual del repo, las opciones mas probables son:
+
+- Devices: administracion/consulta de dispositivos Zebra TC15 y telemetria basica.
+- Movement: movimientos de inventario entre ubicaciones o almacenes.
+- Audit/Alerts: consulta operacional de auditoria y alertas.
+- E2E Operations: pantalla resumen para ejecutar o monitorear el flujo completo.
+
+Recomendacion pragmatica: continuar con `Devices` si el objetivo inmediato es operacion en piso con handhelds; continuar con `Movement` si el objetivo es completar los movimientos internos del almacen antes de cerrar Fase 11.
+
+## Convencion para actualizar esta bitacora
+
+Actualizar este archivo al cerrar cada bloque de trabajo con:
+
+- Fecha.
+- Rama.
+- Commit.
+- Alcance entregado.
+- Validaciones ejecutadas.
+- Pendientes detectados.
+- Siguiente paso recomendado.
