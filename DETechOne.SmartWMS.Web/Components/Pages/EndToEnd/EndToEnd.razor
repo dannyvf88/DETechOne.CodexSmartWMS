@@ -1,0 +1,408 @@
+@attribute [SmartWmsAuthorize]
+@page "/end-to-end"
+@using DETechOne.SmartWMS.Contracts.Dtos.EndToEnd
+@using DETechOne.SmartWMS.Contracts.Requests.EndToEnd
+@using DETechOne.SmartWMS.Contracts.Responses
+@inject DETechOne.SmartWMS.Web.Services.Api.ISmartWmsApiClient ApiClient
+
+<PageTitle>E2E Operations | SmartWMS</PageTitle>
+
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+    <div>
+        <h1>E2E Operations</h1>
+        <p class="text-muted mb-0">Orquesta el flujo completo de orden SAP a entrega.</p>
+    </div>
+    <button class="btn btn-outline-primary" type="button" @onclick="RefreshSelectedFlowAsync" disabled="@(_isBusy || _selectedFlow is null)">
+        @(_isBusy ? "Actualizando..." : "Actualizar flujo")
+    </button>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(_message))
+{
+    <div class="alert alert-success">@_message</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-xl-5">
+        <div class="swms-page-card bg-white p-3 h-100">
+            <h2 class="h5 mb-3">Iniciar flujo</h2>
+            <EditForm Model="_startForm" OnValidSubmit="StartFlowAsync" FormName="StartEndToEndFlowForm">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Sales Order DocEntry</label>
+                        <InputNumber class="form-control" @bind-Value="_startForm.SalesOrderDocEntry" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Warehouse</label>
+                        <InputText class="form-control" @bind-Value="_startForm.WarehouseCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Correlation ID</label>
+                        <InputText class="form-control" @bind-Value="_startForm.CorrelationId" disabled="@_isBusy" />
+                    </div>
+                </div>
+
+                <button class="btn btn-primary mt-3" type="submit" disabled="@_isBusy">
+                    @(_isBusy ? "Iniciando..." : "Iniciar order-to-delivery")
+                </button>
+            </EditForm>
+
+            <hr />
+
+            <h2 class="h5 mb-3">Buscar flujo</h2>
+            <EditForm Model="_lookupForm" OnValidSubmit="LookupFlowAsync" FormName="LookupEndToEndFlowForm">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <label class="form-label">Flow ID</label>
+                <InputText class="form-control" @bind-Value="_lookupForm.FlowIdText" disabled="@_isBusy" />
+
+                <button class="btn btn-outline-primary mt-3" type="submit" disabled="@_isBusy">Cargar flujo</button>
+            </EditForm>
+        </div>
+    </div>
+
+    <div class="col-xl-7">
+        <div class="swms-page-card bg-white p-3 h-100">
+            <h2 class="h5 mb-3">Ejecucion</h2>
+
+            @if (_selectedFlow is null)
+            {
+                <div class="alert alert-info mb-0">Inicia o carga un flujo para ejecutar las etapas operativas.</div>
+            }
+            else
+            {
+                <div class="d-flex flex-wrap justify-content-between gap-3 mb-3">
+                    <div>
+                        <div class="fw-semibold">@_selectedFlow.CorrelationId</div>
+                        <div class="text-muted small">Flow @_selectedFlow.FlowId</div>
+                    </div>
+                    <StatusBadge Status="@_selectedFlow.Status" />
+                </div>
+
+                <EditForm Model="_executeForm" OnValidSubmit="ExecuteFlowAsync" FormName="ExecuteEndToEndFlowForm">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <InputCheckbox class="form-check-input" @bind-Value="_executeForm.AutoCompletePicking" disabled="@_isBusy" />
+                                <label class="form-check-label">Auto completar picking</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <InputCheckbox class="form-check-input" @bind-Value="_executeForm.AutoCompletePacking" disabled="@_isBusy" />
+                                <label class="form-check-label">Auto completar packing</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <InputCheckbox class="form-check-input" @bind-Value="_executeForm.AutoConfirmShipping" disabled="@_isBusy" />
+                                <label class="form-check-label">Auto confirmar shipping</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <InputCheckbox class="form-check-input" @bind-Value="_executeForm.CreateSapDelivery" disabled="@_isBusy" />
+                                <label class="form-check-label">Crear delivery SAP</label>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Package code</label>
+                            <InputText class="form-control" @bind-Value="_executeForm.PackageCode" disabled="@_isBusy" />
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary mt-3" type="submit" disabled="@_isBusy">
+                        @(_isBusy ? "Ejecutando..." : "Ejecutar siguiente tramo")
+                    </button>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="swms-counter-tile">
+            <span>Sales Order</span>
+            <strong>@(_selectedFlow?.SalesOrderDocNum.ToString() ?? "-")</strong>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="swms-counter-tile">
+            <span>Picking</span>
+            <strong>@(_selectedFlow?.PickingNumber ?? "-")</strong>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="swms-counter-tile">
+            <span>Packing</span>
+            <strong>@(_selectedFlow?.PackingNumber ?? "-")</strong>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="swms-counter-tile">
+            <span>Delivery SAP</span>
+            <strong>@(_selectedFlow?.DeliveryDocNum?.ToString() ?? "-")</strong>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-xl-5">
+        <div class="swms-page-card bg-white p-3 h-100">
+            <h2 class="h5 mb-3">Resumen</h2>
+            @if (_selectedFlow is null)
+            {
+                <div class="text-muted">Sin flujo seleccionado.</div>
+            }
+            else
+            {
+                <dl class="row small mb-0">
+                    <dt class="col-sm-4">Cliente</dt>
+                    <dd class="col-sm-8">@_selectedFlow.CustomerCode · @_selectedFlow.CustomerName</dd>
+                    <dt class="col-sm-4">Warehouse</dt>
+                    <dd class="col-sm-8">@_selectedFlow.WarehouseCode</dd>
+                    <dt class="col-sm-4">Creado</dt>
+                    <dd class="col-sm-8">@FormatDate(_selectedFlow.CreatedAtUtc) por @_selectedFlow.CreatedBy</dd>
+                    <dt class="col-sm-4">Shipping</dt>
+                    <dd class="col-sm-8">@(_selectedFlow.ShippingNumber ?? "-")</dd>
+                    <dt class="col-sm-4">Delivery DocEntry</dt>
+                    <dd class="col-sm-8">@(_selectedFlow.DeliveryDocEntry?.ToString() ?? "-")</dd>
+                </dl>
+            }
+        </div>
+    </div>
+
+    <div class="col-xl-7">
+        <div class="swms-page-card bg-white p-3 h-100">
+            <h2 class="h5 mb-3">Etapas</h2>
+            @if (_selectedFlow is null)
+            {
+                <div class="text-muted">Sin etapas para mostrar.</div>
+            }
+            else if (_selectedFlow.Steps.Count == 0)
+            {
+                <div class="alert alert-warning mb-0">El flujo no contiene etapas registradas.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Codigo</th>
+                                <th>Etapa</th>
+                                <th>Status</th>
+                                <th>Mensaje</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var step in _selectedFlow.Steps)
+                            {
+                                <tr>
+                                    <td>@step.Code</td>
+                                    <td>@step.Name</td>
+                                    <td><StatusBadge Status="@step.Status" /></td>
+                                    <td>@(step.Message ?? "-")</td>
+                                    <td>@FormatDate(step.CompletedAtUtc)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private readonly StartFlowFormModel _startForm = new();
+    private readonly ExecuteFlowFormModel _executeForm = new();
+    private readonly LookupFlowFormModel _lookupForm = new();
+    private OrderToDeliveryFlowDto? _selectedFlow;
+    private bool _isBusy;
+    private string? _message;
+    private string? _error;
+
+    private async Task StartFlowAsync()
+    {
+        _isBusy = true;
+        ClearMessages();
+
+        try
+        {
+            var request = new StartOrderToDeliveryFlowRequest
+            {
+                SalesOrderDocEntry = _startForm.SalesOrderDocEntry,
+                WarehouseCode = NormalizeOptional(_startForm.WarehouseCode),
+                CorrelationId = NormalizeOptional(_startForm.CorrelationId)
+            };
+
+            var response = await ApiClient.PostAsync<StartOrderToDeliveryFlowRequest, ApiResponse<OrderToDeliveryFlowDto>>("api/end-to-end/order-to-delivery/start", request);
+            if (!ApplyFlowResponse(response, "No fue posible iniciar el flujo E2E."))
+            {
+                return;
+            }
+
+            _lookupForm.FlowIdText = _selectedFlow?.FlowId.ToString() ?? string.Empty;
+            _message = response?.Message ?? "Flujo E2E iniciado correctamente.";
+        }
+        catch
+        {
+            _error = "No fue posible conectar con la API E2E.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task ExecuteFlowAsync()
+    {
+        if (_selectedFlow is null)
+        {
+            _error = "Inicia o carga un flujo antes de ejecutarlo.";
+            return;
+        }
+
+        _isBusy = true;
+        ClearMessages();
+
+        try
+        {
+            var request = new ExecuteOrderToDeliveryFlowRequest
+            {
+                FlowId = _selectedFlow.FlowId,
+                AutoCompletePicking = _executeForm.AutoCompletePicking,
+                AutoCompletePacking = _executeForm.AutoCompletePacking,
+                AutoConfirmShipping = _executeForm.AutoConfirmShipping,
+                CreateSapDelivery = _executeForm.CreateSapDelivery,
+                PackageCode = NormalizeOptional(_executeForm.PackageCode)
+            };
+
+            var response = await ApiClient.PostAsync<ExecuteOrderToDeliveryFlowRequest, ApiResponse<OrderToDeliveryFlowDto>>("api/end-to-end/order-to-delivery/execute", request);
+            if (!ApplyFlowResponse(response, "No fue posible ejecutar el flujo E2E."))
+            {
+                return;
+            }
+
+            _message = response?.Message ?? "Flujo E2E ejecutado correctamente.";
+        }
+        catch
+        {
+            _error = "No fue posible conectar con la API E2E.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task LookupFlowAsync()
+    {
+        ClearMessages();
+
+        if (!Guid.TryParse(_lookupForm.FlowIdText, out var flowId))
+        {
+            _error = "Flow ID debe ser un GUID valido.";
+            return;
+        }
+
+        await LoadFlowAsync(flowId);
+    }
+
+    private Task RefreshSelectedFlowAsync()
+    {
+        return _selectedFlow is null ? Task.CompletedTask : LoadFlowAsync(_selectedFlow.FlowId);
+    }
+
+    private async Task LoadFlowAsync(Guid flowId)
+    {
+        _isBusy = true;
+        ClearMessages();
+
+        try
+        {
+            var response = await ApiClient.GetAsync<ApiResponse<OrderToDeliveryFlowDto>>($"api/end-to-end/order-to-delivery/{flowId}");
+            if (!ApplyFlowResponse(response, "No fue posible cargar el flujo E2E."))
+            {
+                return;
+            }
+
+            _lookupForm.FlowIdText = _selectedFlow?.FlowId.ToString() ?? string.Empty;
+        }
+        catch
+        {
+            _error = "No fue posible conectar con la API E2E.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private bool ApplyFlowResponse(ApiResponse<OrderToDeliveryFlowDto>? response, string fallbackMessage)
+    {
+        if (response is null || !response.Success || response.Data is null)
+        {
+            _error = response?.Message ?? fallbackMessage;
+            return false;
+        }
+
+        _selectedFlow = response.Data;
+        return true;
+    }
+
+    private void ClearMessages()
+    {
+        _message = null;
+        _error = null;
+    }
+
+    private static string? NormalizeOptional(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static string FormatDate(DateTime? value)
+    {
+        return value.HasValue ? value.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm") : "-";
+    }
+
+    private sealed class StartFlowFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Range(1, int.MaxValue)]
+        public int SalesOrderDocEntry { get; set; } = 1;
+
+        public string? WarehouseCode { get; set; } = "WH-01";
+        public string? CorrelationId { get; set; } = $"WEB-{Guid.NewGuid():N}";
+    }
+
+    private sealed class ExecuteFlowFormModel
+    {
+        public bool AutoCompletePicking { get; set; } = true;
+        public bool AutoCompletePacking { get; set; } = true;
+        public bool AutoConfirmShipping { get; set; } = true;
+        public bool CreateSapDelivery { get; set; }
+        public string? PackageCode { get; set; } = "PKG-E2E-001";
+    }
+
+    private sealed class LookupFlowFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string FlowIdText { get; set; } = string.Empty;
+    }
+}
