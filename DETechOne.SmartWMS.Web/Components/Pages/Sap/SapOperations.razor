@@ -1,0 +1,549 @@
+@attribute [SmartWmsAuthorize]
+@page "/sap-operations"
+@using DETechOne.SmartWMS.Contracts.Dtos.SAP
+@using DETechOne.SmartWMS.Contracts.Requests.SAP
+@using DETechOne.SmartWMS.Contracts.Responses
+@inject DETechOne.SmartWMS.Web.Services.Api.ISmartWmsApiClient ApiClient
+
+<PageTitle>SAP Operations | SmartWMS</PageTitle>
+
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+    <div>
+        <h1>SAP Operations</h1>
+        <p class="text-muted mb-0">Valida conectividad SAP, consulta maestros/documentos y crea transferencias.</p>
+    </div>
+    <button class="btn btn-outline-primary" type="button" @onclick="LoadStatusAsync" disabled="@_isBusy">
+        @(_isBusy ? "Actualizando..." : "Actualizar status")
+    </button>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(_message))
+{
+    <div class="alert alert-success">@_message</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="swms-counter-tile">
+            <span>Configurado</span>
+            <strong>@FormatBool(_status?.IsConfigured)</strong>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="swms-counter-tile">
+            <span>Conectado</span>
+            <strong>@FormatBool(_status?.IsConnected)</strong>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="swms-counter-tile">
+            <span>Modo</span>
+            <strong>@(_status?.Mode ?? "-")</strong>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="swms-counter-tile">
+            <span>Sesion SL</span>
+            <strong>@(_session?.IsAuthenticated == true ? "Activa" : "-")</strong>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-xl-5">
+        <div class="swms-page-card bg-white p-3 h-100">
+            <h2 class="h5 mb-3">Conexion SAP</h2>
+            @if (_status is null)
+            {
+                <div class="text-muted">Sin status cargado.</div>
+            }
+            else
+            {
+                <dl class="row small">
+                    <dt class="col-sm-4">Company DB</dt>
+                    <dd class="col-sm-8">@(_status.CompanyDb.Length == 0 ? "-" : _status.CompanyDb)</dd>
+                    <dt class="col-sm-4">Server</dt>
+                    <dd class="col-sm-8">@(_status.Server.Length == 0 ? "-" : _status.Server)</dd>
+                    <dt class="col-sm-4">Service Layer</dt>
+                    <dd class="col-sm-8">@(_status.ServiceLayerBaseUrl.Length == 0 ? "-" : _status.ServiceLayerBaseUrl)</dd>
+                    <dt class="col-sm-4">Mensaje</dt>
+                    <dd class="col-sm-8">@_status.Message</dd>
+                </dl>
+            }
+
+            <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-primary" type="button" @onclick="LoginServiceLayerAsync" disabled="@_isBusy">Login Service Layer</button>
+                <button class="btn btn-outline-danger" type="button" @onclick="LogoutServiceLayerAsync" disabled="@_isBusy">Logout</button>
+            </div>
+
+            @if (_session is not null)
+            {
+                <hr />
+                <dl class="row small mb-0">
+                    <dt class="col-sm-4">Authenticated</dt>
+                    <dd class="col-sm-8">@FormatBool(_session.IsAuthenticated)</dd>
+                    <dt class="col-sm-4">Route ID</dt>
+                    <dd class="col-sm-8">@(_session.RouteId.Length == 0 ? "-" : _session.RouteId)</dd>
+                    <dt class="col-sm-4">Expires</dt>
+                    <dd class="col-sm-8">@FormatDate(_session.ExpiresAtUtc)</dd>
+                    <dt class="col-sm-4">Mensaje</dt>
+                    <dd class="col-sm-8">@_session.Message</dd>
+                </dl>
+            }
+        </div>
+    </div>
+
+    <div class="col-xl-7">
+        <div class="swms-page-card bg-white p-3 h-100">
+            <h2 class="h5 mb-3">Consultas SAP</h2>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <EditForm Model="_salesOrderForm" OnValidSubmit="LoadSalesOrderAsync" FormName="SapSalesOrderForm">
+                        <DataAnnotationsValidator />
+                        <label class="form-label">Sales Order DocEntry</label>
+                        <InputNumber class="form-control" @bind-Value="_salesOrderForm.DocEntry" disabled="@_isBusy" />
+                        <button class="btn btn-outline-primary mt-2 w-100" type="submit" disabled="@_isBusy">Leer orden</button>
+                    </EditForm>
+                </div>
+                <div class="col-md-4">
+                    <EditForm Model="_businessPartnerForm" OnValidSubmit="LoadBusinessPartnerAsync" FormName="SapBusinessPartnerForm">
+                        <DataAnnotationsValidator />
+                        <label class="form-label">Business Partner</label>
+                        <InputText class="form-control" @bind-Value="_businessPartnerForm.CardCode" disabled="@_isBusy" />
+                        <button class="btn btn-outline-primary mt-2 w-100" type="submit" disabled="@_isBusy">Leer BP</button>
+                    </EditForm>
+                </div>
+                <div class="col-md-4">
+                    <EditForm Model="_itemForm" OnValidSubmit="LoadItemAsync" FormName="SapItemForm">
+                        <DataAnnotationsValidator />
+                        <label class="form-label">Item</label>
+                        <InputText class="form-control" @bind-Value="_itemForm.ItemCode" disabled="@_isBusy" />
+                        <button class="btn btn-outline-primary mt-2 w-100" type="submit" disabled="@_isBusy">Leer item</button>
+                    </EditForm>
+                </div>
+                <div class="col-md-4">
+                    <EditForm Model="_warehouseForm" OnValidSubmit="LoadWarehouseAsync" FormName="SapWarehouseForm">
+                        <DataAnnotationsValidator />
+                        <label class="form-label">Warehouse</label>
+                        <InputText class="form-control" @bind-Value="_warehouseForm.WarehouseCode" disabled="@_isBusy" />
+                        <button class="btn btn-outline-primary mt-2 w-100" type="submit" disabled="@_isBusy">Leer warehouse</button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-xl-5">
+        <div class="swms-page-card bg-white p-3 h-100">
+            <h2 class="h5 mb-3">Inventory transfer SAP</h2>
+            <EditForm Model="_transferForm" OnValidSubmit="CreateInventoryTransferAsync" FormName="SapInventoryTransferForm">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">From warehouse</label>
+                        <InputText class="form-control" @bind-Value="_transferForm.FromWarehouseCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">To warehouse</label>
+                        <InputText class="form-control" @bind-Value="_transferForm.ToWarehouseCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Comments</label>
+                        <InputText class="form-control" @bind-Value="_transferForm.Comments" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Item</label>
+                        <InputText class="form-control" @bind-Value="_transferForm.ItemCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Cantidad</label>
+                        <InputNumber class="form-control" @bind-Value="_transferForm.Quantity" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">From location</label>
+                        <InputText class="form-control" @bind-Value="_transferForm.FromLocationCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">To location</label>
+                        <InputText class="form-control" @bind-Value="_transferForm.ToLocationCode" disabled="@_isBusy" />
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Lot</label>
+                        <InputText class="form-control" @bind-Value="_transferForm.LotNumber" disabled="@_isBusy" />
+                    </div>
+                </div>
+
+                <button class="btn btn-primary mt-3" type="submit" disabled="@_isBusy">
+                    @(_isBusy ? "Creando..." : "Crear transferencia SAP")
+                </button>
+            </EditForm>
+        </div>
+    </div>
+
+    <div class="col-xl-7">
+        <div class="swms-page-card bg-white p-3 h-100">
+            <h2 class="h5 mb-3">Resultado</h2>
+            @if (_selectedResult is null)
+            {
+                <div class="text-muted">Ejecuta una consulta o transferencia para ver resultados.</div>
+            }
+            else
+            {
+                @_selectedResult
+            }
+        </div>
+    </div>
+</div>
+
+@if (_salesOrder is not null)
+{
+    <div class="swms-page-card bg-white p-3">
+        <div class="d-flex flex-wrap justify-content-between gap-3 mb-3">
+            <div>
+                <h2 class="h5 mb-0">Sales Order @_salesOrder.DocNum</h2>
+                <div class="text-muted small">@_salesOrder.CardCode · @_salesOrder.CardName</div>
+            </div>
+            <StatusBadge Status="@_salesOrder.DocStatus" />
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Linea</th>
+                        <th>Item</th>
+                        <th>Descripcion</th>
+                        <th>Warehouse</th>
+                        <th class="text-end">Cantidad</th>
+                        <th class="text-end">Abierta</th>
+                        <th>UoM</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var line in _salesOrder.Lines)
+                    {
+                        <tr>
+                            <td>@line.LineNum</td>
+                            <td>@line.ItemCode</td>
+                            <td>@line.ItemDescription</td>
+                            <td>@line.WarehouseCode</td>
+                            <td class="text-end">@FormatDecimal(line.Quantity)</td>
+                            <td class="text-end">@FormatDecimal(line.OpenQuantity)</td>
+                            <td>@line.UomCode</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+    private readonly SalesOrderFormModel _salesOrderForm = new();
+    private readonly BusinessPartnerFormModel _businessPartnerForm = new();
+    private readonly ItemFormModel _itemForm = new();
+    private readonly WarehouseFormModel _warehouseForm = new();
+    private readonly TransferFormModel _transferForm = new();
+    private SapConnectionStatusDto? _status;
+    private SapSessionDto? _session;
+    private SapSalesOrderDto? _salesOrder;
+    private string? _selectedResult;
+    private bool _isBusy;
+    private string? _message;
+    private string? _error;
+
+    protected override Task OnInitializedAsync()
+    {
+        return LoadStatusAsync();
+    }
+
+    private async Task LoadStatusAsync()
+    {
+        _isBusy = true;
+        ClearMessages();
+
+        try
+        {
+            var response = await ApiClient.GetAsync<ApiResponse<SapConnectionStatusDto>>("api/sap/status");
+            if (response is null || !response.Success || response.Data is null)
+            {
+                _error = response?.Message ?? "No fue posible consultar status SAP.";
+                return;
+            }
+
+            _status = response.Data;
+            _selectedResult = response.Data.Message;
+        }
+        catch
+        {
+            _error = "No fue posible conectar con la API SAP.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task LoginServiceLayerAsync()
+    {
+        await PostWithoutBodyAsync<ApiResponse<SapSessionDto>>("api/sap/service-layer/login", response =>
+        {
+            if (response is null || !response.Success || response.Data is null)
+            {
+                _error = response?.Message ?? "No fue posible iniciar sesion Service Layer.";
+                return;
+            }
+
+            _session = response.Data;
+            _message = response.Message ?? "Sesion Service Layer iniciada.";
+            _selectedResult = response.Data.Message;
+        });
+    }
+
+    private async Task LogoutServiceLayerAsync()
+    {
+        await PostWithoutBodyAsync<ApiResponse<string>>("api/sap/service-layer/logout", response =>
+        {
+            if (response is null || !response.Success)
+            {
+                _error = response?.Message ?? "No fue posible cerrar sesion Service Layer.";
+                return;
+            }
+
+            _session = null;
+            _message = response.Message ?? "Sesion Service Layer cerrada.";
+            _selectedResult = response.Data ?? "OK";
+        });
+    }
+
+    private async Task LoadSalesOrderAsync()
+    {
+        _isBusy = true;
+        ClearMessages();
+
+        try
+        {
+            var response = await ApiClient.GetAsync<ApiResponse<SapSalesOrderDto>>($"api/sap/sales-orders/{_salesOrderForm.DocEntry}");
+            if (response is null || !response.Success || response.Data is null)
+            {
+                _error = response?.Message ?? "No fue posible leer la orden SAP.";
+                return;
+            }
+
+            _salesOrder = response.Data;
+            _selectedResult = $"Sales Order {response.Data.DocNum} cargada con {response.Data.Lines.Count} lineas.";
+            _message = "Sales Order cargada correctamente.";
+        }
+        catch
+        {
+            _error = "No fue posible conectar con la API SAP.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private Task LoadBusinessPartnerAsync()
+    {
+        return LoadSingleAsync<SapBusinessPartnerDto>(
+            $"api/sap/business-partners/{Uri.EscapeDataString(_businessPartnerForm.CardCode)}",
+            "Business Partner cargado correctamente.",
+            bp => $"BP {bp.CardCode}: {bp.CardName} · Tipo {bp.CardType} · Activo {FormatBool(bp.Active)}");
+    }
+
+    private Task LoadItemAsync()
+    {
+        return LoadSingleAsync<SapItemDto>(
+            $"api/sap/items/{Uri.EscapeDataString(_itemForm.ItemCode)}",
+            "Item cargado correctamente.",
+            item => $"Item {item.ItemCode}: {item.ItemName} · UoM {item.InventoryUom} · Inventario {FormatBool(item.InventoryItem)}");
+    }
+
+    private Task LoadWarehouseAsync()
+    {
+        return LoadSingleAsync<SapWarehouseDto>(
+            $"api/sap/warehouses/{Uri.EscapeDataString(_warehouseForm.WarehouseCode)}",
+            "Warehouse cargado correctamente.",
+            warehouse => $"Warehouse {warehouse.WarehouseCode}: {warehouse.WarehouseName} · Inactivo {FormatBool(warehouse.Inactive)}");
+    }
+
+    private async Task CreateInventoryTransferAsync()
+    {
+        _isBusy = true;
+        ClearMessages();
+
+        try
+        {
+            var request = new CreateSapInventoryTransferRequest
+            {
+                FromWarehouseCode = _transferForm.FromWarehouseCode,
+                ToWarehouseCode = _transferForm.ToWarehouseCode,
+                Comments = _transferForm.Comments,
+                Lines = new[]
+                {
+                    new CreateSapInventoryTransferLineRequest
+                    {
+                        LineNumber = 1,
+                        ItemCode = _transferForm.ItemCode,
+                        Quantity = _transferForm.Quantity,
+                        LotNumber = NormalizeOptional(_transferForm.LotNumber),
+                        FromLocationCode = NormalizeOptional(_transferForm.FromLocationCode),
+                        ToLocationCode = NormalizeOptional(_transferForm.ToLocationCode)
+                    }
+                }
+            };
+
+            var response = await ApiClient.PostAsync<CreateSapInventoryTransferRequest, ApiResponse<SapInventoryTransferResultDto>>("api/sap/inventory-transfers", request);
+            if (response is null || !response.Success || response.Data is null)
+            {
+                _error = response?.Message ?? "No fue posible crear transferencia SAP.";
+                return;
+            }
+
+            _message = response.Message ?? "Transferencia SAP creada correctamente.";
+            _selectedResult = $"Inventory Transfer DocEntry {response.Data.DocEntry}, DocNum {response.Data.DocNum}. {response.Data.Message}";
+        }
+        catch
+        {
+            _error = "No fue posible conectar con la API SAP.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task LoadSingleAsync<T>(string endpoint, string successMessage, Func<T, string> format)
+    {
+        _isBusy = true;
+        ClearMessages();
+
+        try
+        {
+            var response = await ApiClient.GetAsync<ApiResponse<T>>(endpoint);
+            if (response is null || !response.Success || response.Data is null)
+            {
+                _error = response?.Message ?? "No fue posible leer informacion SAP.";
+                return;
+            }
+
+            _message = successMessage;
+            _selectedResult = format(response.Data);
+        }
+        catch
+        {
+            _error = "No fue posible conectar con la API SAP.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task PostWithoutBodyAsync<TResponse>(string endpoint, Action<TResponse?> apply)
+    {
+        _isBusy = true;
+        ClearMessages();
+
+        try
+        {
+            var response = await ApiClient.PostAsync<object, TResponse>(endpoint, new { });
+            apply(response);
+        }
+        catch
+        {
+            _error = "No fue posible conectar con la API SAP.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private void ClearMessages()
+    {
+        _message = null;
+        _error = null;
+    }
+
+    private static string? NormalizeOptional(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static string FormatBool(bool? value)
+    {
+        return value.HasValue ? FormatBool(value.Value) : "-";
+    }
+
+    private static string FormatBool(bool value)
+    {
+        return value ? "Si" : "No";
+    }
+
+    private static string FormatDate(DateTime? value)
+    {
+        return value.HasValue ? value.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm") : "-";
+    }
+
+    private static string FormatDecimal(decimal value)
+    {
+        return value.ToString("0.##");
+    }
+
+    private sealed class SalesOrderFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Range(1, int.MaxValue)]
+        public int DocEntry { get; set; } = 1;
+    }
+
+    private sealed class BusinessPartnerFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string CardCode { get; set; } = "C0001";
+    }
+
+    private sealed class ItemFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string ItemCode { get; set; } = "ITEM-001";
+    }
+
+    private sealed class WarehouseFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string WarehouseCode { get; set; } = "WH-01";
+    }
+
+    private sealed class TransferFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string FromWarehouseCode { get; set; } = "WH-01";
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string ToWarehouseCode { get; set; } = "WH-02";
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string Comments { get; set; } = "Transferencia creada desde SmartWMS Web.";
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string ItemCode { get; set; } = "ITEM-001";
+
+        [System.ComponentModel.DataAnnotations.Range(typeof(decimal), "0.01", "999999999")]
+        public decimal Quantity { get; set; } = 1;
+
+        public string? LotNumber { get; set; }
+        public string? FromLocationCode { get; set; } = "LOC-01";
+        public string? ToLocationCode { get; set; } = "LOC-02";
+    }
+}
