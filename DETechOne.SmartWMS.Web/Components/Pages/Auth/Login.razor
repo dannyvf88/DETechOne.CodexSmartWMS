@@ -1,0 +1,112 @@
+@page "/login"
+@inject DETechOne.SmartWMS.Web.Services.Auth.IAuthService AuthService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager Navigation
+
+<PageTitle>Login | SmartWMS</PageTitle>
+
+<div class="swms-auth-page">
+    <div class="swms-auth-card shadow-sm">
+        <div class="mb-4">
+            <div class="swms-logo-mark">SW</div>
+            <h1 class="h3 mt-3 mb-1">SmartWMS 2.0</h1>
+            <p class="text-muted mb-0">Acceso operativo al WMS</p>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <div class="alert alert-danger">@_error</div>
+        }
+
+        <EditForm Model="_model" OnValidSubmit="LoginAsync" FormName="LoginForm">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label class="form-label">Usuario</label>
+                <InputText class="form-control" @bind-Value="_model.UserName" autocomplete="username" disabled="@_isBusy" />
+                <ValidationMessage For="@(() => _model.UserName)" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Contraseña</label>
+                <InputText type="password" class="form-control" @bind-Value="_model.Password" autocomplete="current-password" disabled="@_isBusy" />
+                <ValidationMessage For="@(() => _model.Password)" />
+            </div>
+
+            <button class="btn btn-primary w-100" type="submit" disabled="@_isBusy">
+                @(_isBusy ? "Validando..." : "Entrar")
+            </button>
+        </EditForm>
+
+        <div class="small text-muted mt-4">
+            Usuario temporal: <strong>admin</strong><br />
+            Contraseña temporal: <strong>SmartWMS#2026</strong>
+        </div>
+    </div>
+</div>
+
+@code {
+    private readonly DETechOne.SmartWMS.Web.Models.Auth.LoginRequest _model = new();
+    private bool _isBusy;
+    private string? _error;
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            Navigation.NavigateTo(GetSafeReturnUrl(), replace: true);
+        }
+    }
+
+    private async Task LoginAsync()
+    {
+        _isBusy = true;
+        _error = null;
+
+        try
+        {
+            var ok = await AuthService.LoginAsync(_model);
+            if (!ok)
+            {
+                _error = "Usuario o contraseña incorrectos.";
+                return;
+            }
+
+            Navigation.NavigateTo(GetSafeReturnUrl());
+        }
+        catch
+        {
+            _error = "No fue posible iniciar sesión. Verifica que la API esté disponible.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private string GetSafeReturnUrl()
+    {
+        if (string.IsNullOrWhiteSpace(ReturnUrl))
+        {
+            return "/dashboard";
+        }
+
+        if (Uri.TryCreate(ReturnUrl, UriKind.Relative, out _))
+        {
+            return ReturnUrl;
+        }
+
+        return "/dashboard";
+    }
+}

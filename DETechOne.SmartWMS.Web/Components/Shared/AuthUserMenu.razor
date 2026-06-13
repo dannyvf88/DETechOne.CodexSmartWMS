@@ -1,0 +1,45 @@
+@inject DETechOne.SmartWMS.Web.Services.Auth.IAuthService AuthService
+@inject NavigationManager Navigation
+
+<AuthorizeView>
+    <Authorized>
+        <div class="swms-user-menu">
+            <div class="text-end me-3 d-none d-md-block">
+                <div class="fw-semibold">@GetDisplayName(context.User)</div>
+                <div class="small text-muted">@GetRoleSummary(context.User)</div>
+            </div>
+            <button class="btn btn-outline-secondary btn-sm" type="button" @onclick="LogoutAsync">
+                Salir
+            </button>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <button class="btn btn-primary btn-sm" type="button" @onclick='() => Navigation.NavigateTo("/login")'>
+            Iniciar sesión
+        </button>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private async Task LogoutAsync()
+    {
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/login");
+    }
+
+    private static string GetDisplayName(System.Security.Claims.ClaimsPrincipal user)
+    {
+        return user.Identity?.Name ?? "Usuario SmartWMS";
+    }
+
+    private static string GetRoleSummary(System.Security.Claims.ClaimsPrincipal user)
+    {
+        var roles = user.Claims
+            .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role || c.Type is "role" or "roles")
+            .Select(c => c.Value)
+            .Distinct()
+            .ToArray();
+
+        return roles.Length == 0 ? "Sesión activa" : string.Join(", ", roles);
+    }
+}

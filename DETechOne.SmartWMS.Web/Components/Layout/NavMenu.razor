@@ -1,0 +1,79 @@
+@inject NavigationManager Navigation
+@inject DETechOne.SmartWMS.Web.Services.Auth.IAuthService AuthService
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">SmartWMS 2.0</a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler')?.click()">
+    <nav class="flex-column">
+        <AuthorizeView>
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="dashboard">
+                        <span class="bi bi-speedometer2-nav-menu" aria-hidden="true"></span> Dashboard
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="inventory">
+                        <span class="bi bi-box-seam-nav-menu" aria-hidden="true"></span> Inventory
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="picking">
+                        <span class="bi bi-list-check-nav-menu" aria-hidden="true"></span> Picking
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="packing">
+                        <span class="bi bi-archive-nav-menu" aria-hidden="true"></span> Packing
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="shipping">
+                        <span class="bi bi-truck-nav-menu" aria-hidden="true"></span> Shipping
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="devices">
+                        <span class="bi bi-phone-nav-menu" aria-hidden="true"></span> Devices
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3 mt-4">
+                    <NavLink class="nav-link" href="profile">
+                        <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Perfil
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <button class="nav-link btn btn-link text-start" @onclick="LogoutAsync">
+                        <span class="bi bi-door-open-nav-menu" aria-hidden="true"></span> Salir
+                    </button>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="">
+                        <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Inicio
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="login">
+                        <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Login
+                    </NavLink>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+    </nav>
+</div>
+
+@code {
+    private async Task LogoutAsync()
+    {
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/login");
+    }
+}

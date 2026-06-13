@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DETechOne.SmartWMS.Contracts\DETechOne.SmartWMS.Contracts.csproj" />
+    <ProjectReference Include="..\DETechOne.SmartWMS.Domain\DETechOne.SmartWMS.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Inventory\" />
+    <Folder Include="Movement\" />
+    <Folder Include="Commands\" />
+    <Folder Include="Services\" />
+    <Folder Include="Validators\" />
+    <Folder Include="Queries\" />
+    <Folder Include="Tasks\" />
+    <Folder Include="Security\" />
+    <Folder Include="Shipping\" />
+    <Folder Include="Packing\" />
+    <Folder Include="Picking\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+  </ItemGroup>
+
+</Project>

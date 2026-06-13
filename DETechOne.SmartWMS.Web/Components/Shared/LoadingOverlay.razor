@@ -1,0 +1,36 @@
+@implements IDisposable
+@inject DETechOne.SmartWMS.Web.Services.State.IUiStateService UiState
+
+@if (ShouldShow)
+{
+    <div class="swms-loading-overlay">
+        <div class="swms-loading-card">
+            <div class="spinner-border" role="status"></div>
+            <div class="mt-3 fw-semibold">@CurrentMessage</div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public bool? IsVisible { get; set; }
+
+    [Parameter]
+    public string? Message { get; set; }
+
+    private bool ShouldShow => IsVisible ?? UiState.IsBusy;
+
+    private string CurrentMessage => Message ?? UiState.BusyMessage ?? "Procesando...";
+
+    protected override void OnInitialized()
+    {
+        UiState.Changed += OnChanged;
+    }
+
+    private void OnChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        UiState.Changed -= OnChanged;
+    }
+}

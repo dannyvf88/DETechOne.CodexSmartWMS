@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.5.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DETechOne.SmartWMS.API\DETechOne.SmartWMS.API.csproj" />
+    <ProjectReference Include="..\DETechOne.SmartWMS.Application\DETechOne.SmartWMS.Application.csproj" />
+    <ProjectReference Include="..\DETechOne.SmartWMS.Domain\DETechOne.SmartWMS.Domain.csproj" />
+    <ProjectReference Include="..\DETechOne.SmartWMS.Infrastructure\DETechOne.SmartWMS.Infrastructure.csproj" />
+    <ProjectReference Include="..\DETechOne.SmartWMS.Installer\DETechOne.SmartWMS.Installer.csproj" />
+  </ItemGroup>
+
+</Project>

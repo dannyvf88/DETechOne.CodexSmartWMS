@@ -1,0 +1,85 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.37314.3
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DETechOne.SmartWMS.API", "DETechOne.SmartWMS.API\DETechOne.SmartWMS.API.csproj", "{33B1D670-1C5F-4F56-9E49-225CD0590CE2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DETechOne.SmartWMS.Domain", "DETechOne.SmartWMS.Domain\DETechOne.SmartWMS.Domain.csproj", "{CC31D5C8-060C-4B11-BCB6-047D2541221B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DETechOne.SmartWMS.Application", "DETechOne.SmartWMS.Application\DETechOne.SmartWMS.Application.csproj", "{C7757C27-2C3A-4496-B5E9-928009E9BA19}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DETechOne.SmartWMS.Infrastructure", "DETechOne.SmartWMS.Infrastructure\DETechOne.SmartWMS.Infrastructure.csproj", "{D2C98148-48B6-4C6A-8ADC-2A637180807A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DETechOne.SmartWMS.Contracts", "DETechOne.SmartWMS.Contracts\DETechOne.SmartWMS.Contracts.csproj", "{0315C145-CD94-4422-97C5-19A40D0212E3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DETechOne.SmartWMS.Device", "DETechOne.SmartWMS.Device\DETechOne.SmartWMS.Device.csproj", "{B57F81D4-A2D3-4919-B991-C9A630DC6CC4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DETechOne.SmartWMS.Installer", "DETechOne.SmartWMS.Installer\DETechOne.SmartWMS.Installer.csproj", "{1DE9AC6F-DDBD-4BF0-A7DB-02E3C06E8DD8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DETechOne.SmartWMS.SAP", "DETechOne.SmartWMS.SAP\DETechOne.SmartWMS.SAP.csproj", "{33BBB571-9A3D-4313-97E1-C8D4D09B70E1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DETechOne.SmartWMS.Tasks", "DETechOne.SmartWMS.Tasks\DETechOne.SmartWMS.Tasks.csproj", "{4DF5BBF0-2F63-4A5F-8378-A6E4AC73E662}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DETechOne.SmartWMS.Tests", "DETechOne.SmartWMS.Tests\DETechOne.SmartWMS.Tests.csproj", "{03B129F8-6798-4D7B-937F-64DC1475BC74}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DETechOne.SmartWMS.Web", "DETechOne.SmartWMS.Web\DETechOne.SmartWMS.Web.csproj", "{7582863E-CFCF-4124-B2A1-2D8306FE4BD0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{33B1D670-1C5F-4F56-9E49-225CD0590CE2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{33B1D670-1C5F-4F56-9E49-225CD0590CE2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{33B1D670-1C5F-4F56-9E49-225CD0590CE2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{33B1D670-1C5F-4F56-9E49-225CD0590CE2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC31D5C8-060C-4B11-BCB6-047D2541221B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC31D5C8-060C-4B11-BCB6-047D2541221B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC31D5C8-060C-4B11-BCB6-047D2541221B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC31D5C8-060C-4B11-BCB6-047D2541221B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7757C27-2C3A-4496-B5E9-928009E9BA19}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7757C27-2C3A-4496-B5E9-928009E9BA19}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7757C27-2C3A-4496-B5E9-928009E9BA19}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7757C27-2C3A-4496-B5E9-928009E9BA19}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D2C98148-48B6-4C6A-8ADC-2A637180807A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2C98148-48B6-4C6A-8ADC-2A637180807A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2C98148-48B6-4C6A-8ADC-2A637180807A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2C98148-48B6-4C6A-8ADC-2A637180807A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0315C145-CD94-4422-97C5-19A40D0212E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0315C145-CD94-4422-97C5-19A40D0212E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0315C145-CD94-4422-97C5-19A40D0212E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0315C145-CD94-4422-97C5-19A40D0212E3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B57F81D4-A2D3-4919-B991-C9A630DC6CC4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B57F81D4-A2D3-4919-B991-C9A630DC6CC4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B57F81D4-A2D3-4919-B991-C9A630DC6CC4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B57F81D4-A2D3-4919-B991-C9A630DC6CC4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1DE9AC6F-DDBD-4BF0-A7DB-02E3C06E8DD8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1DE9AC6F-DDBD-4BF0-A7DB-02E3C06E8DD8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1DE9AC6F-DDBD-4BF0-A7DB-02E3C06E8DD8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1DE9AC6F-DDBD-4BF0-A7DB-02E3C06E8DD8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{33BBB571-9A3D-4313-97E1-C8D4D09B70E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{33BBB571-9A3D-4313-97E1-C8D4D09B70E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{33BBB571-9A3D-4313-97E1-C8D4D09B70E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{33BBB571-9A3D-4313-97E1-C8D4D09B70E1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4DF5BBF0-2F63-4A5F-8378-A6E4AC73E662}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4DF5BBF0-2F63-4A5F-8378-A6E4AC73E662}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4DF5BBF0-2F63-4A5F-8378-A6E4AC73E662}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4DF5BBF0-2F63-4A5F-8378-A6E4AC73E662}.Release|Any CPU.Build.0 = Release|Any CPU
+		{03B129F8-6798-4D7B-937F-64DC1475BC74}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03B129F8-6798-4D7B-937F-64DC1475BC74}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03B129F8-6798-4D7B-937F-64DC1475BC74}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03B129F8-6798-4D7B-937F-64DC1475BC74}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7582863E-CFCF-4124-B2A1-2D8306FE4BD0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7582863E-CFCF-4124-B2A1-2D8306FE4BD0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7582863E-CFCF-4124-B2A1-2D8306FE4BD0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7582863E-CFCF-4124-B2A1-2D8306FE4BD0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {31579668-A762-469A-96B7-AA15CEBB4C4D}
+	EndGlobalSection
+EndGlobal

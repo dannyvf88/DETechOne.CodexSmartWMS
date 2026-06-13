@@ -1,0 +1,62 @@
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager Navigation
+
+@if (!RequiresAuthentication || _isAuthenticated)
+{
+    <RouteView RouteData="RouteData" DefaultLayout="DefaultLayout" />
+}
+else
+{
+    <LayoutView Layout="DefaultLayout">
+        <LoadingOverlay Message="Validando sesion..." IsVisible="true" />
+    </LayoutView>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public RouteData RouteData { get; set; } = default!;
+
+    [Parameter]
+    public Type? DefaultLayout { get; set; }
+
+    private Type? _currentPageType;
+    private bool _isAuthenticated;
+    private bool _needsAuthenticationCheck;
+
+    private bool RequiresAuthentication =>
+        RouteData.PageType.GetCustomAttributes(typeof(SmartWmsAuthorizeAttribute), inherit: true).Any();
+
+    protected override void OnParametersSet()
+    {
+        if (_currentPageType == RouteData.PageType)
+        {
+            return;
+        }
+
+        _currentPageType = RouteData.PageType;
+        _isAuthenticated = false;
+        _needsAuthenticationCheck = RequiresAuthentication;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_needsAuthenticationCheck)
+        {
+            return;
+        }
+
+        _needsAuthenticationCheck = false;
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            _isAuthenticated = true;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var returnUrl = Uri.EscapeDataString("/" + relativePath);
+        Navigation.NavigateTo($"/login?returnUrl={returnUrl}");
+    }
+}

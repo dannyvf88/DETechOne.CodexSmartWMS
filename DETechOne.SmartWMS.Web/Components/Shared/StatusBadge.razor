@@ -1,0 +1,16 @@
+<span class="badge @CssClass">@Text</span>
+
+@code {
+    [Parameter] public string? Status { get; set; }
+
+    private string Text => string.IsNullOrWhiteSpace(Status) ? "N/A" : Status;
+
+    private string CssClass => (Status ?? string.Empty).ToUpperInvariant() switch
+    {
+        "OP" or "OPEN" or "ACTIVE" => "text-bg-primary",
+        "TE" or "DONE" or "CLOSED" => "text-bg-success",
+        "CA" or "CANCELLED" or "ERROR" => "text-bg-danger",
+        "PE" or "PENDING" => "text-bg-warning",
+        _ => "text-bg-secondary"
+    };
+}

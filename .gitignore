@@ -1,0 +1,31 @@
+# Build outputs
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider / JetBrains
+.idea/
+
+# VS Code
+.vscode/
+
+# Test results and coverage
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage/
+coverage.cobertura.xml
+
+# Logs
+*.log
+
+# OS files
+Thumbs.db
+Desktop.ini

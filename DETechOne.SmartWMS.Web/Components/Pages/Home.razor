@@ -1,0 +1,10 @@
+@page "/"
+@inject NavigationManager Navigation
+
+<PageTitle>SmartWMS</PageTitle>
+
+<div class="swms-home-hero">
+    <h1>SmartWMS 2.0</h1>
+    <p>Interfaz base para operación de inventario, picking, packing, shipping y dispositivos Zebra.</p>
+    <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/dashboard")'>Ir al dashboard</button>
+</div>

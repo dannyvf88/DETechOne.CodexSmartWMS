@@ -1,0 +1,690 @@
+# SmartWMS 2.0 – Estado Actual del Proyecto (Resumen para Retomar en Codex)
+
+## Objetivo del Proyecto
+
+SmartWMS 2.0 es un Warehouse Management System desarrollado sobre .NET 8, SAP Business One y arquitectura modular, orientado a operaciones reales de almacén con:
+
+* Recepción
+* Inventarios
+* Movimientos
+* Picking
+* Packing
+* Shipping
+* Integración SAP B1
+* Dispositivos móviles Zebra
+* Auditoría
+* Dashboard operativo
+
+El objetivo actual es completar el MVP Productivo y posteriormente evolucionar hacia SmartWMS 3.0.
+
+---
+
+# Arquitectura General
+
+## Solución
+
+```text
+DETechOne.SmartWMS.sln
+│
+├── DETechOne.SmartWMS.Api
+├── DETechOne.SmartWMS.Domain
+├── DETechOne.SmartWMS.Persistence
+├── DETechOne.SmartWMS.SapIntegration
+├── DETechOne.SmartWMS.Installer
+├── DETechOne.SmartWMS.Web
+└── DETechOne.SmartWMS.Tests
+```
+
+---
+
+# Backend
+
+## Estado
+
+Backend MVP prácticamente terminado.
+
+### Componentes implementados
+
+### Security Foundation
+
+* JWT Authentication
+* Roles
+* Claims
+* Policies
+
+Estado:
+
+```text
+COMPLETO
+```
+
+---
+
+### Persistence Foundation
+
+Implementado:
+
+* EF Core
+* SQL Server
+* Repositories
+* Unit Of Work
+
+Estado:
+
+```text
+COMPLETO
+```
+
+---
+
+### Metadata Installer
+
+Implementado:
+
+* Catálogos base
+* Instalación inicial
+* Seed Data
+
+Estado:
+
+```text
+COMPLETO
+```
+
+---
+
+### Inventory Engine
+
+Implementado:
+
+* Existencias
+* Lotes
+* Ubicaciones
+* Consulta de stock
+
+Estado:
+
+```text
+COMPLETO
+```
+
+---
+
+### Movement Engine
+
+Implementado:
+
+* Entradas
+* Salidas
+* Transferencias
+
+Estado:
+
+```text
+COMPLETO
+```
+
+---
+
+### Picking Engine
+
+Implementado:
+
+* Pick Tasks
+* Confirmación
+* Estados
+
+Estado:
+
+```text
+COMPLETO
+```
+
+---
+
+### Packing Engine
+
+Implementado:
+
+* Packing Tasks
+* Packing Confirmation
+
+Estado:
+
+```text
+COMPLETO
+```
+
+---
+
+### Shipping Engine
+
+Implementado:
+
+* Shipment Creation
+* Shipment Confirmation
+
+Estado:
+
+```text
+COMPLETO
+```
+
+---
+
+### SAP Integration Foundation
+
+Implementado:
+
+* SAP DI API Foundation
+* Service Layer Foundation
+* Delivery Creation
+* Inventory Transfers
+
+Estado:
+
+```text
+COMPLETO
+```
+
+---
+
+### Zebra TC15 Device API
+
+Implementado:
+
+* Device Registration
+* Device Authentication
+* Device Status
+
+Estado:
+
+```text
+COMPLETO
+```
+
+---
+
+### Audit & Alert Engine
+
+Implementado:
+
+* Auditoría
+* Eventos
+* Alertas
+
+Estado:
+
+```text
+COMPLETO
+```
+
+---
+
+### Dashboard Metrics API
+
+Implementado:
+
+* KPIs
+* Métricas operativas
+
+Estado:
+
+```text
+COMPLETO
+```
+
+---
+
+### MVP Stabilization
+
+Implementado:
+
+* QA técnico
+* Correcciones
+* Integración entre módulos
+
+Estado:
+
+```text
+COMPLETO
+```
+
+---
+
+# Base de Datos
+
+Implementada.
+
+Incluye:
+
+```text
+Users
+Roles
+Warehouses
+Bins
+Items
+Inventory
+InventoryTransactions
+Transfers
+PickTasks
+PackTasks
+Shipments
+Devices
+AuditLogs
+Alerts
+```
+
+Estado:
+
+```text
+COMPLETO
+```
+
+---
+
+# API
+
+Actualmente existen endpoints para:
+
+```text
+/auth
+/users
+
+/inventory
+/inventory-transfers
+
+/picking
+/packing
+/shipping
+
+/devices
+
+/audit
+/dashboard
+```
+
+Estado:
+
+```text
+COMPLETO
+```
+
+---
+
+# Testing
+
+Implementado:
+
+```text
+xUnit
+Integration Tests
+Flow Tests
+```
+
+Estado:
+
+```text
+COMPLETO
+```
+
+---
+
+# UI (Blazor)
+
+## Estado Actual
+
+Nos encontramos aquí.
+
+---
+
+## Fase 11.0 — UI Foundation
+
+Implementado:
+
+```text
+Proyecto Blazor creado
+Bootstrap integrado
+Layout base
+Navegación principal
+```
+
+Estado:
+
+```text
+COMPLETO
+```
+
+---
+
+## Fase 11.1 — Authentication UI
+
+Implementado parcialmente.
+
+### Login.razor
+
+Creado:
+
+```text
+Login Page
+AuthService
+AuthenticationStateProvider
+NavigationManager
+```
+
+UI funcional.
+
+---
+
+### Problema actual
+
+Al abrir Login:
+
+```text
+Unhandled exception on current circuit
+Circuit terminated
+```
+
+Error reportado:
+
+```text
+blazor.web.js
+
+There was an unhandled exception
+on the current circuit.
+```
+
+Esto indica un error en servidor Blazor.
+
+Debe activarse:
+
+```json
+{
+  "DetailedErrors": true
+}
+```
+
+en:
+
+```text
+appsettings.Development.json
+```
+
+o
+
+```csharp
+builder.Services.AddServerSideBlazor()
+    .AddCircuitOptions(x =>
+    {
+        x.DetailedErrors = true;
+    });
+```
+
+para identificar la excepción real.
+
+---
+
+# Lo que Falta
+
+## Fase 11.1
+
+Terminar autenticación.
+
+Pendiente:
+
+* Resolver excepción actual
+* Login funcional
+* Logout
+* Session persistence
+* Role redirection
+
+Estado:
+
+```text
+EN PROCESO
+```
+
+---
+
+## Fase 11.2 — Dashboard UI
+
+Crear:
+
+```text
+Dashboard Principal
+KPIs
+Tarjetas
+Indicadores
+Gráficas
+```
+
+Estado:
+
+```text
+PENDIENTE
+```
+
+---
+
+## Fase 11.3 — Inventory UI
+
+Crear:
+
+```text
+Consulta Inventario
+Existencias
+Ubicaciones
+Lotes
+```
+
+Estado:
+
+```text
+PENDIENTE
+```
+
+---
+
+## Fase 11.4 — Movement UI
+
+Crear:
+
+```text
+Entradas
+Salidas
+Transferencias
+```
+
+Estado:
+
+```text
+PENDIENTE
+```
+
+---
+
+## Fase 11.5 — Picking UI
+
+Crear:
+
+```text
+Lista de tareas
+Confirmación
+Detalle Picking
+```
+
+Estado:
+
+```text
+PENDIENTE
+```
+
+---
+
+## Fase 11.6 — Packing UI
+
+Crear:
+
+```text
+Packing Tasks
+Confirmaciones
+```
+
+Estado:
+
+```text
+PENDIENTE
+```
+
+---
+
+## Fase 11.7 — Shipping UI
+
+Crear:
+
+```text
+Shipment Board
+Confirmación envío
+Tracking interno
+```
+
+Estado:
+
+```text
+PENDIENTE
+```
+
+---
+
+## Fase 11.8 — Device Management UI
+
+Crear:
+
+```text
+Listado Zebra
+Estado dispositivos
+Registro
+```
+
+Estado:
+
+```text
+PENDIENTE
+```
+
+---
+
+## Fase 11.9 — Audit UI
+
+Crear:
+
+```text
+Bitácora
+Auditoría
+Alertas
+```
+
+Estado:
+
+```text
+PENDIENTE
+```
+
+---
+
+## Fase 11.10 — End-to-End UI Flow
+
+Integrar:
+
+```text
+Recepción
+Inventario
+Picking
+Packing
+Shipping
+SAP Delivery
+```
+
+Estado:
+
+```text
+PENDIENTE
+```
+
+---
+
+## Fase 11.11 — UI QA
+
+Ejecutar:
+
+```text
+Pruebas funcionales
+Correcciones
+UX Review
+```
+
+Estado:
+
+```text
+PENDIENTE
+```
+
+---
+
+## Fase 11.12 — MVP Release Candidate
+
+Preparar:
+
+```text
+Build Release
+Publicación
+Instalador
+Documentación
+```
+
+Estado:
+
+```text
+PENDIENTE
+```
+
+---
+
+# Estado Global del Proyecto
+
+| Área               | Avance |
+| ------------------ | ------ |
+| Arquitectura       | 100%   |
+| Base de Datos      | 100%   |
+| Backend            | 100%   |
+| SAP Integration    | 100%   |
+| APIs               | 100%   |
+| Device API         | 100%   |
+| Auditoría          | 100%   |
+| Testing Backend    | 100%   |
+| UI Foundation      | 100%   |
+| Authentication UI  | 70%    |
+| Módulos UI         | 0%     |
+| QA Final           | 0%     |
+| Release Productivo | 0%     |
+
+---
+
+# Próximo Paso Inmediato
+
+Antes de avanzar a Dashboard o módulos operativos, resolver el error actual de Blazor en la fase 11.1.
+
+### Información que debe revisar Codex primero
+
+1. `Program.cs`
+2. `AuthenticationStateProvider` personalizado
+3. `IAuthService`
+4. `AuthService`
+5. `Login.razor`
+6. `App.razor`
+7. `Routes.razor`
+8. `MainLayout.razor`
+9. Configuración JWT
+10. Registro de servicios DI
+
+El proyecto está aproximadamente al **80–85% del MVP completo**. Todo el backend productivo existe; el trabajo restante se concentra principalmente en la capa **Blazor UI**, pruebas funcionales integrales y empaquetado final para despliegue.
