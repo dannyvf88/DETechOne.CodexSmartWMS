@@ -9,14 +9,14 @@ public sealed class SmartWmsApiClient(IHttpClientFactory httpClientFactory) : IS
     public async Task<TResponse?> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
     {
         var client = httpClientFactory.CreateClient(ClientName);
-        return await client.GetFromJsonAsync<TResponse>(endpoint, cancellationToken).ConfigureAwait(false);
+        using var response = await client.GetAsync(endpoint, cancellationToken).ConfigureAwait(false);
+        return await response.Content.ReadFromJsonAsync<TResponse>(cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<TResponse?> PostAsync<TRequest, TResponse>(string endpoint, TRequest request, CancellationToken cancellationToken = default)
     {
         var client = httpClientFactory.CreateClient(ClientName);
-        var response = await client.PostAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
+        using var response = await client.PostAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
         return await response.Content.ReadFromJsonAsync<TResponse>(cancellationToken).ConfigureAwait(false);
     }
 }
