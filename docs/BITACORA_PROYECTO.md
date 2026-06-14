@@ -98,19 +98,18 @@ Rama: `codex/phase-11-operational-pages`
 
 Ultima validacion completa registrada:
 
-- `dotnet build DETechOne.SmartWMS.sln`
-  - Resultado: correcto, 0 errores.
+- QA final Fase 11 - 2026-06-13
+  - `dotnet build DETechOne.SmartWMS.sln`: correcto, 0 errores.
+  - `dotnet test DETechOne.SmartWMS.sln --no-build`: correcto, 13 pruebas aprobadas.
+  - Smoke Web: `/dashboard`, `/inventory`, `/movement`, `/picking`, `/packing`, `/shipping`, `/end-to-end`, `/sap-operations`, `/devices`, `/alerts`, `/audit`, `/profile`: HTTP 200.
+  - Smoke API: login, dashboard overview, SAP status, device register, audit create, alert create y movement create: correcto.
+  - Smoke API E2E: validacion protegida de `start` con `SalesOrderDocEntry = 0`: HTTP 400 esperado.
 
-- `dotnet test DETechOne.SmartWMS.sln --no-build`
-  - Resultado: correcto, 13 pruebas aprobadas.
-
-- Smoke API Shipping
-  - Crear shipping: correcto.
-  - Confirmar shipping: correcto.
-  - Consultar shippings abiertos: correcto.
-
-- Smoke Web `/shipping`
-  - Resultado: HTTP 200.
+- Validaciones previas
+  - Smoke API Shipping: crear, confirmar y consultar shippings abiertos: correcto.
+  - Smoke API Devices/Movement: registrar device, iniciar scanner session, scan, crear y confirmar movement: correcto.
+  - Smoke API Audit/Alerts: crear/buscar audit event, crear/reconocer/resolver alerta: correcto.
+  - Smoke API SAP: `api/sap/status` con token: correcto, modo `Disabled` en entorno local.
 
 Notas de entorno:
 
@@ -145,16 +144,11 @@ Pendientes inmediatos recomendados:
 3. Revisar UX de errores por endpoint para distinguir validacion de negocio, expiracion de sesion y falla de conectividad.
 4. Confirmar si los formularios manuales actuales deben reemplazarse por busquedas reales de documentos origen.
 5. Ejecutar una pasada end-to-end completa con SAP Service Layer configurado: Sales Order SAP -> Picking -> Packing -> Shipping -> Delivery SAP.
-6. Preparar merge de `codex/phase-11-operational-pages` hacia `main` cuando el alcance de UI operacional quede aprobado.
+6. Mantener la rama `codex/phase-11-operational-pages` como respaldo historico de la Fase 11.
 
 ## Siguiente paso recomendado
 
-El siguiente bloque natural es definir y construir la siguiente pantalla operacional faltante. Por el estado actual del repo, las opciones mas probables son:
-
-- Audit/Alerts: consulta operacional de auditoria y alertas.
-- QA final de Fase 11: pasada completa con API/Web y, si aplica, SAP real.
-
-Recomendacion pragmatica: preparar QA final de Fase 11 y merge hacia `main`, dejando como condicion externa la validacion con SAP Service Layer real configurado.
+La Fase 11 UI operacional queda lista para merge hacia `main`. Despues del merge, el siguiente bloque recomendado es QA con SAP Service Layer real configurado o definicion de la siguiente fase funcional.
 
 ## Convencion para actualizar esta bitacora
 
